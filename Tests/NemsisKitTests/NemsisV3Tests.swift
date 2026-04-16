@@ -23,7 +23,9 @@ import Testing
     for fileURL in fileURLs {
         let destURL = version.xsdsDirectoryURL.appendingPathComponent(fileURL.lastPathComponent)
         if !FileManager.default.fileExists(atPath: destURL.path) {
-            try FileManager.default.copyItem(at: fileURL, to: version.xsdsDirectoryURL.appendingPathComponent(fileURL.lastPathComponent))
+            try FileManager.default.copyItem(at: fileURL,
+                                             to: version.xsdsDirectoryURL
+                                                        .appendingPathComponent(fileURL.lastPathComponent))
         }
     }
 

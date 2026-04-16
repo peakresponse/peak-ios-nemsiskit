@@ -18,7 +18,10 @@ class NemsisV3 {
     init(version: String) throws {
         self.version = version
         let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        versionDirectoryURL = appSupportURL.appendingPathComponent(version)
+        versionDirectoryURL = appSupportURL
+            .appendingPathComponent("NemsisKit", isDirectory: true)
+            .appendingPathComponent("NemsisV3", isDirectory: true)
+            .appendingPathComponent(version, isDirectory: true)
         try FileManager.default.createDirectory(at: versionDirectoryURL, withIntermediateDirectories: true)
         xsdsDirectoryURL = versionDirectoryURL.appendingPathComponent("xsds")
         try FileManager.default.createDirectory(at: xsdsDirectoryURL, withIntermediateDirectories: true)
