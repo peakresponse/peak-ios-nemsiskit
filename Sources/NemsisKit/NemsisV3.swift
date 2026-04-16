@@ -23,12 +23,12 @@ class NemsisV3 {
         xsdsDirectoryURL = versionDirectoryURL.appendingPathComponent("xsds")
         try FileManager.default.createDirectory(at: xsdsDirectoryURL, withIntermediateDirectories: true)
     }
-    
+
     func newPCR() -> PatientCareReportV3 {
         let pcr = PatientCareReportV3(version: self)
         return pcr
     }
-    
+
     func xsd(named: String) throws -> Document {
         if let doc = xsds[named] {
             return doc
@@ -37,7 +37,7 @@ class NemsisV3 {
         xsds[named] = doc
         return doc
     }
-    
+
     func emsDataSetXsd() throws -> Document {
         return try xsd(named: "EMSDataSet_v3.xsd")
     }

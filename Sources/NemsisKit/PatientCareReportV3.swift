@@ -7,12 +7,12 @@
 
 class PatientCareReportV3 {
     let version: NemsisV3
-    
+
     init(version: NemsisV3) {
         self.version = version
     }
-    
+
     func reset() {
-        
+
     }
 }
