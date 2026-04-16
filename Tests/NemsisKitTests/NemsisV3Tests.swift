@@ -31,6 +31,6 @@ import Testing
 
     let emsDataSetXSD = try version.emsDataSetXsd()
     let query = try XPathQuery("/xs:schema/xs:element[@name='EMSDataSet']")
-    let node = query.firstNodeResult(with: emsDataSetXSD.node)
-    #expect(node != nil)
+    let result = query.firstNodeResult(with: emsDataSetXSD.node)
+    #expect(result != nil)
 }

@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/tomasf/Nodal.git", from: "1.0.0"),
+        .package(url: "https://github.com/peakresponse/Nodal", branch: "xpathnode-access"),
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.63.2")
     ],
     targets: [
