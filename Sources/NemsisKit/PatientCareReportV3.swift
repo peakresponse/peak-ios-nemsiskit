@@ -7,6 +7,7 @@
 
 import Foundation
 import Nodal
+import SwiftXMLLint
 
 class PatientCareReportV3 {
     let version: NemsisV3
@@ -78,7 +79,29 @@ class PatientCareReportV3 {
         }
     }
 
+    func validate() throws -> [XMLValidationError] {
+        let validator = try XMLValidator(xsdURL: version.emsDataSetXsdURL)
+        // swiftlint:disable line_length
+        let xml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<EMSDataSet xmlns="http://www.nemsis.org"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.nemsis.org https://nemsis.org/media/nemsis_v3/3.5.0.211008CP3/XSDs/NEMSIS_NAT_XSDs/EMSDataSet_v3.xsd">
+    <Header>
+        <DemographicGroup>
+            <dAgency.01>0</dAgency.01>
+            <dAgency.02>0</dAgency.02>
+            <dAgency.04>00</dAgency.04>
+        </DemographicGroup>
+        \(try xmlString())
+    </Header>
+</EMSDataSet>
+"""
+        // swiftlint:enable line_length
+        return try validator.validate(xml: xml)
+    }
+
     func xmlString() throws -> String {
-        return try doc.xmlString()
+        return try doc.xmlString(options: [.indent, .noDeclaration])
     }
 }

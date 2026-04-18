@@ -256,4 +256,11 @@ struct PatientCareReportV3Tests {
     </eOutcome>
 """))
     }
+
+    @Test
+    func testValidation() throws {
+        let pcr = try PatientCareReportV3(version: version)
+        let errors = try pcr.validate()
+        print(errors)
+    }
 }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "2dd88bfce14da05b3a23b73b8fbffb32a16dc8e04fa0e14a1037b83e3372dac7",
+  "originHash" : "289473fe68457054a1838ce5bd70fee74bcfbf7397156519059bed8069b11622",
   "pins" : [
     {
       "identity" : "nodal",
@@ -8,6 +8,15 @@
       "state" : {
         "branch" : "xpathnode-access",
         "revision" : "677b8021488f1c6a7906ef56ebfb4d17a8f1b03f"
+      }
+    },
+    {
+      "identity" : "swift-xml-lint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/peakresponse/swift-xml-lint",
+      "state" : {
+        "branch" : "dev",
+        "revision" : "74f4968e18d543fc34cff8b69aedae661e30c27a"
       }
     },
     {

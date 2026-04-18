@@ -17,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/peakresponse/Nodal", branch: "xpathnode-access"),
+        .package(url: "https://github.com/peakresponse/swift-xml-lint", branch: "dev"),
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.63.2")
     ],
     targets: [
@@ -25,7 +26,8 @@ let package = Package(
         .target(
             name: "NemsisKit",
             dependencies: [
-                .product(name: "Nodal", package: "Nodal")
+                .product(name: "Nodal", package: "Nodal"),
+                .product(name: "SwiftXMLLint", package: "swift-xml-lint")
             ],
             swiftSettings: [.interoperabilityMode(.Cxx)],
             plugins: [.plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")]

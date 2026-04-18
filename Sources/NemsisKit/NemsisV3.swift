@@ -13,6 +13,10 @@ class NemsisV3 {
     let versionDirectoryURL: URL
     let xsdsDirectoryURL: URL
 
+    var emsDataSetXsdURL: URL {
+        return xsdsDirectoryURL.appendingPathComponent("EMSDataSet_v3.xsd")
+    }
+
     var xsds: [String: Document] = [:]
 
     init(version: String) throws {
