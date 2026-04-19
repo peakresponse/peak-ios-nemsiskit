@@ -1,8 +1,8 @@
 //
-//  PatientCareReportV3Tests.swift
+//  NemsisKitTests.swift
 //  NemsisKit
 //
-//  Created by Francis Li on 4/16/26.
+//  Created by Francis Li on 4/19/26.
 //
 
 import Foundation
@@ -13,19 +13,27 @@ import Testing
 
 let versionString = "3.5.1.251001CP2"
 
-struct PatientCareReportV3Tests {
+// swiftlint:disable:next type_body_length
+struct NemsisKitTests {
     let version: NemsisV3
 
     init() throws {
-        version = try NemsisV3(version: "3.5.1.251001CP2")
-        let testDataURL = Bundle.module.url(forResource: "Fixtures/XSDs/\(versionString)", withExtension: nil)
-        let fileURLs = try FileManager.default.contentsOfDirectory(at: testDataURL!, includingPropertiesForKeys: nil)
-        for fileURL in fileURLs {
-            let destURL = version.xsdsDirectoryURL.appendingPathComponent(fileURL.lastPathComponent)
+        version = try NemsisV3(version: versionString)
+        let fixturesURL = Bundle.module.url(forResource: "Fixtures/\(versionString)", withExtension: nil)!
+        let xsdsURL = fixturesURL.appendingPathComponent("xsds")
+        let xsdURLs = try FileManager.default.contentsOfDirectory(at: xsdsURL, includingPropertiesForKeys: nil)
+        for xsdURL in xsdURLs {
+            let destURL = version.xsdsDirectoryURL.appendingPathComponent(xsdURL.lastPathComponent)
             if !FileManager.default.fileExists(atPath: destURL.path) {
-                try FileManager.default.copyItem(at: fileURL,
-                                                 to: version.xsdsDirectoryURL
-                                                            .appendingPathComponent(fileURL.lastPathComponent))
+                try FileManager.default.copyItem(at: xsdURL, to: destURL)
+            }
+        }
+        let schsURL = fixturesURL.appendingPathComponent("schs")
+        let schURLs = try FileManager.default.contentsOfDirectory(at: schsURL, includingPropertiesForKeys: nil)
+        for schURL in schURLs {
+            let destURL = version.schsDirectoryURL.appendingPathComponent(schURL.lastPathComponent)
+            if !FileManager.default.fileExists(atPath: destURL.path) {
+                try FileManager.default.copyItem(at: schURL, to: destURL)
             }
         }
     }
@@ -260,7 +268,7 @@ struct PatientCareReportV3Tests {
     @Test
     func testValidation() throws {
         let pcr = try PatientCareReportV3(version: version)
-        let errors = try pcr.validate()
+        let errors = try version.validate(pcr: pcr)
         print(errors)
     }
 }

@@ -7,11 +7,13 @@
 
 import Foundation
 import Nodal
+import SwiftXMLLint
 
 class NemsisV3 {
-    let version: String
+    let versionString: String
     let versionDirectoryURL: URL
     let xsdsDirectoryURL: URL
+    let schsDirectoryURL: URL
 
     var emsDataSetXsdURL: URL {
         return xsdsDirectoryURL.appendingPathComponent("EMSDataSet_v3.xsd")
@@ -20,7 +22,7 @@ class NemsisV3 {
     var xsds: [String: Document] = [:]
 
     init(version: String) throws {
-        self.version = version
+        self.versionString = version
         let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         versionDirectoryURL = appSupportURL
             .appendingPathComponent("NemsisKit", isDirectory: true)
@@ -29,6 +31,8 @@ class NemsisV3 {
         try FileManager.default.createDirectory(at: versionDirectoryURL, withIntermediateDirectories: true)
         xsdsDirectoryURL = versionDirectoryURL.appendingPathComponent("xsds")
         try FileManager.default.createDirectory(at: xsdsDirectoryURL, withIntermediateDirectories: true)
+        schsDirectoryURL = versionDirectoryURL.appendingPathComponent("schs")
+        try FileManager.default.createDirectory(at: schsDirectoryURL, withIntermediateDirectories: true)
     }
 
     func newPCR() throws -> PatientCareReportV3 {
@@ -51,5 +55,31 @@ class NemsisV3 {
 
     func emsTypeXsd(named: String) throws -> Document {
         return try xsd(named: "\(named)_v3.xsd")
+    }
+
+    func validate(pcr: PatientCareReportV3) throws -> [XMLValidationError] {
+        let validator = try XMLValidator(xsdURL: emsDataSetXsdURL)
+        let errors = try validator.validate(xml: try wrappedXml(pcr: pcr))
+        return errors
+    }
+
+    private func wrappedXml(pcr: PatientCareReportV3) throws -> String {
+        // swiftlint:disable line_length
+        return """
+<?xml version="1.0" encoding="UTF-8"?>
+<EMSDataSet xmlns="http://www.nemsis.org"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.nemsis.org https://nemsis.org/media/nemsis_v3/\(versionString)/XSDs/NEMSIS_NAT_XSDs/EMSDataSet_v3.xsd">
+    <Header>
+        <DemographicGroup>
+            <dAgency.01>0</dAgency.01>
+            <dAgency.02>0</dAgency.02>
+            <dAgency.04>00</dAgency.04>
+        </DemographicGroup>
+        \(try pcr.xmlString())
+    </Header>
+</EMSDataSet>
+"""
+        // swiftlint:enable line_length
     }
 }
