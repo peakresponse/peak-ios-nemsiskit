@@ -266,6 +266,14 @@ struct NemsisKitTests {
     }
 
     @Test
+    func testPCRFromURL() throws {
+        let xmlURL = Bundle.module.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailXsd", withExtension: "xml")!
+        let pcr = try PatientCareReportV3(version: version, url: xmlURL)
+        let errors = try version.validate(pcr: pcr)
+        print(errors)
+    }
+
+    @Test
     func testValidation() throws {
         let pcr = try PatientCareReportV3(version: version)
         let errors = try version.validate(pcr: pcr)

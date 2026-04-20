@@ -9,6 +9,10 @@ import Foundation
 import Nodal
 import SwiftXMLLint
 
+enum PatientCareReportV3Error: Error {
+    case missingUUID
+}
+
 class PatientCareReportV3 {
     let version: NemsisV3
     let id: UUID
@@ -18,6 +22,16 @@ class PatientCareReportV3 {
         self.version = version
         id = UUID()
         try reset()
+    }
+
+    init(version: NemsisV3, url fileURL: URL) throws {
+        self.version = version
+        doc = try Document(url: fileURL)
+        if let uuid = UUID(uuidString: doc.documentElement?[attribute: "UUID"] ?? "") {
+            id = uuid
+        } else {
+            throw PatientCareReportV3Error.missingUUID
+        }
     }
 
     func reset() throws {
