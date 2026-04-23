@@ -1,0 +1,22 @@
+<html>
+  <script src="SaxonJS3.rt.js"></script>
+  <body>
+    <script>
+      async function validate(stylesheetLocation, sourceLocation) {
+        const responses = await Promise.all([fetch(stylesheetLocation), fetch(sourceLocation)]);
+        const [stylesheetInternal, sourceText] = await Promise.all([responses[0].json(), responses[1].text()]);
+        const result = SaxonJS.transform({
+          stylesheetInternal,
+          sourceText,
+          destination: 'serialized',
+          outputProperties: {
+            method: 'xml',
+            indent: true
+          },
+          nonInteractive: true,
+        });
+        return result.principalResult;
+      }
+    </script>
+  </body>
+</html>

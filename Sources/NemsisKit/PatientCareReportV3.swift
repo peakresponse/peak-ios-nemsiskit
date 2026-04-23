@@ -13,18 +13,19 @@ enum PatientCareReportV3Error: Error {
     case missingUUID
 }
 
-class PatientCareReportV3 {
-    let version: NemsisV3
-    let id: UUID
+@MainActor
+public class PatientCareReportV3 {
+    public let version: NemsisV3
+    public let id: UUID
     private var doc: Document!
 
-    init(version: NemsisV3) throws {
+    public init(version: NemsisV3) throws {
         self.version = version
         id = UUID()
         try reset()
     }
 
-    init(version: NemsisV3, url fileURL: URL) throws {
+    public init(version: NemsisV3, url fileURL: URL) throws {
         self.version = version
         doc = try Document(url: fileURL)
         if let uuid = UUID(uuidString: doc.documentElement?[attribute: "UUID"] ?? "") {
@@ -34,7 +35,7 @@ class PatientCareReportV3 {
         }
     }
 
-    func reset() throws {
+    public func reset() throws {
         doc = Document()
         let root = doc.makeDocumentElement(name: "PatientCareReport")
         root[attribute: "UUID"] = id.uuidString.lowercased()
@@ -93,7 +94,7 @@ class PatientCareReportV3 {
         }
     }
 
-    func xmlString() throws -> String {
+    public func xmlString() throws -> String {
         return try doc.xmlString(options: [.indent, .noDeclaration])
     }
 }

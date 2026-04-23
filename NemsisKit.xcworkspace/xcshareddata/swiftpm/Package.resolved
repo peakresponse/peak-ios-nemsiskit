@@ -1,5 +1,5 @@
 {
-  "originHash" : "289473fe68457054a1838ce5bd70fee74bcfbf7397156519059bed8069b11622",
+  "originHash" : "fcd8959d047e772aeb907445eeacd693326dffffdb418dd9c840e57632aab1e1",
   "pins" : [
     {
       "identity" : "nodal",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/peakresponse/swift-xml-lint",
       "state" : {
         "branch" : "dev",
-        "revision" : "be4a8d19d1d35c5720c5c291de17a16fca7a8221"
+        "revision" : "87d4fc6f63cd7a2e1b495c27a18261a5a37a9af1"
       }
     },
     {

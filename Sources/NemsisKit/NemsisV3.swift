@@ -8,20 +8,27 @@
 import Foundation
 import Nodal
 import SwiftXMLLint
+import WebKit
 
-class NemsisV3 {
-    let versionString: String
-    let versionDirectoryURL: URL
-    let xsdsDirectoryURL: URL
-    let schsDirectoryURL: URL
+@MainActor
+public class NemsisV3 {
+    public let versionString: String
+    public let versionDirectoryURL: URL
+    public let xsdsDirectoryURL: URL
+    public let schsDirectoryURL: URL
 
-    var emsDataSetXsdURL: URL {
+    public var emsDataSetXsdURL: URL {
         return xsdsDirectoryURL.appendingPathComponent("EMSDataSet_v3.xsd")
     }
 
     var xsds: [String: Document] = [:]
 
-    init(version: String) throws {
+    let schematronValidator: SchematronValidator
+    public var webView: WKWebView {
+        return schematronValidator.webView
+    }
+
+    public init(version: String) throws {
         self.versionString = version
         let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         versionDirectoryURL = appSupportURL
@@ -33,14 +40,26 @@ class NemsisV3 {
         try FileManager.default.createDirectory(at: xsdsDirectoryURL, withIntermediateDirectories: true)
         schsDirectoryURL = versionDirectoryURL.appendingPathComponent("schs")
         try FileManager.default.createDirectory(at: schsDirectoryURL, withIntermediateDirectories: true)
+
+        let saxonURL = Bundle.module.url(forResource: "SaxonJS", withExtension: nil)!
+        let saxonURLs = try FileManager.default.contentsOfDirectory(at: saxonURL, includingPropertiesForKeys: nil)
+        for url in saxonURLs {
+            let destURL = schsDirectoryURL.appendingPathComponent(url.lastPathComponent)
+            if FileManager.default.fileExists(atPath: destURL.path) {
+                try FileManager.default.removeItem(at: destURL)
+            }
+            try FileManager.default.copyItem(at: url, to: destURL)
+        }
+
+        schematronValidator = SchematronValidator(baseURL: schsDirectoryURL)
     }
 
-    func newPCR() throws -> PatientCareReportV3 {
+    public func newPCR() throws -> PatientCareReportV3 {
         let pcr = try PatientCareReportV3(version: self)
         return pcr
     }
 
-    func xsd(named: String) throws -> Document {
+    public func xsd(named: String) throws -> Document {
         if let doc = xsds[named] {
             return doc
         }
@@ -49,17 +68,21 @@ class NemsisV3 {
         return doc
     }
 
-    func emsDataSetXsd() throws -> Document {
+    public func emsDataSetXsd() throws -> Document {
         return try xsd(named: "EMSDataSet_v3.xsd")
     }
 
-    func emsTypeXsd(named: String) throws -> Document {
+    public func emsTypeXsd(named: String) throws -> Document {
         return try xsd(named: "\(named)_v3.xsd")
     }
 
-    func validate(pcr: PatientCareReportV3) throws -> [XMLValidationError] {
+    public func validate(pcr: PatientCareReportV3) async throws -> [XMLValidationError] {
         let validator = try XMLValidator(xsdURL: emsDataSetXsdURL)
-        let errors = try validator.validate(xml: try wrappedXml(pcr: pcr))
+        let wrappedXML = try wrappedXml(pcr: pcr)
+        let errors = try validator.validate(xml: wrappedXML)
+        if errors.isEmpty {
+            return try await schematronValidator.validate(xml: wrappedXML, with: "EMSDataSet.sch.xsl.sef.json")
+        }
         return errors
     }
 

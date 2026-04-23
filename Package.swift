@@ -29,6 +29,9 @@ let package = Package(
                 .product(name: "Nodal", package: "Nodal"),
                 .product(name: "SwiftXMLLint", package: "swift-xml-lint")
             ],
+            resources: [
+                .copy("SaxonJS")
+            ],
             swiftSettings: [.interoperabilityMode(.Cxx)],
             plugins: [.plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")]
         ),

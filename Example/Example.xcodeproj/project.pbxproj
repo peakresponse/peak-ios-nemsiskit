@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		45139D6B2F903BE6005FFFC2 /* NemsisKit in Frameworks */ = {isa = PBXBuildFile; productRef = 45139D6A2F903BE6005FFFC2 /* NemsisKit */; };
+		454A8EBD2F99869200C0AF38 /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = 454A8EBC2F99869200C0AF38 /* Fixtures */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		454A8EBC2F99869200C0AF38 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = "<group>"; };
 		45A8999A2F903A96003E8647 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		45A899B02F903A97003E8647 /* ExampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		45A899BA2F903A97003E8647 /* ExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,6 +95,7 @@
 		45A899912F903A95003E8647 = {
 			isa = PBXGroup;
 			children = (
+				454A8EBC2F99869200C0AF38 /* Fixtures */,
 				45A8999C2F903A96003E8647 /* Example */,
 				45A899B32F903A97003E8647 /* ExampleTests */,
 				45A899BD2F903A97003E8647 /* ExampleUITests */,
@@ -234,6 +237,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				454A8EBD2F99869200C0AF38 /* Fixtures in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,6 +421,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OBJC_INTEROP_MODE = objcxx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -474,6 +479,7 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OBJC_INTEROP_MODE = objcxx;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
