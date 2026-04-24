@@ -13,7 +13,7 @@ import Testing
 
 let versionString = "3.5.1.251001CP2"
 
-// swiftlint:disable:next type_body_length
+@MainActor // swiftlint:disable:next type_body_length
 struct NemsisKitTests {
     let version: NemsisV3
 
@@ -266,17 +266,17 @@ struct NemsisKitTests {
     }
 
     @Test
-    func testPCRFromURL() throws {
+    func testPCRFromURL() async throws {
         let xmlURL = Bundle.module.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailXsd", withExtension: "xml")!
         let pcr = try PatientCareReportV3(version: version, url: xmlURL)
-        let errors = try version.validate(pcr: pcr)
+        let errors = try await version.validate(pcr: pcr)
         print(errors)
     }
 
     @Test
-    func testValidation() throws {
+    func testValidation() async throws {
         let pcr = try PatientCareReportV3(version: version)
-        let errors = try version.validate(pcr: pcr)
+        let errors = try await version.validate(pcr: pcr)
         print(errors)
     }
 }

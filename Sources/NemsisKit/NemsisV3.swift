@@ -79,9 +79,12 @@ public class NemsisV3 {
     public func validate(pcr: PatientCareReportV3) async throws -> [XMLValidationError] {
         let validator = try XMLValidator(xsdURL: emsDataSetXsdURL)
         let wrappedXML = try wrappedXml(pcr: pcr)
-        let errors = try validator.validate(xml: wrappedXML)
+        var errors = try validator.validate(xml: wrappedXML)
         if errors.isEmpty {
             return try await schematronValidator.validate(xml: wrappedXML, with: "EMSDataSet.sch.xsl.sef.json")
+        } else {
+            errors = errors.map { XMLValidationError(message: $0.message, // swiftlint:disable:next line_length
+                                                     location: $0.location.replacingOccurrences(of: "/EMSDataSet/Header", with: ""))}
         }
         return errors
     }
