@@ -10,6 +10,10 @@ import Nodal
 import SwiftXMLLint
 import WebKit
 
+public enum NemsisV3Error: Error {
+    case notFound
+}
+
 @MainActor
 public class NemsisV3 {
     public let versionString: String
@@ -22,6 +26,7 @@ public class NemsisV3 {
     }
 
     var xsds: [String: Document] = [:]
+    var types: [String: Node] = [:]
 
     let schematronValidator: SchematronValidator
     public var webView: WKWebView {
@@ -74,6 +79,52 @@ public class NemsisV3 {
 
     public func emsTypeXsd(named: String) throws -> Document {
         return try xsd(named: "\(named)_v3.xsd")
+    }
+
+    public func emsElement(in xsd: String, xPath: String) throws -> Node {
+        let doc = try self.xsd(named: xsd)
+        let query = try XPathQuery(xPath)
+        if let result = query.firstNodeResult(with: doc.node), let node = result.node {
+            return node
+        }
+        throw NemsisV3Error.notFound
+    }
+
+    public func emsTypeElement(in xsd: String, named: String) throws -> Node {
+        // first check if in cache
+        if let node = types[named] {
+            return node
+        }
+
+        // helper function to process xpath query results and look for named node
+        func process(_ results: [XPathNode]) -> Node? {
+            var found: Node?
+            for result in results {
+                if let node = result.node, let name = node[attribute: "name"] {
+                    types[name] = node
+                    if name == named {
+                        found = node
+                    }
+                }
+            }
+            return found
+        }
+
+        // next look in specified xsd
+        var doc = try self.xsd(named: xsd)
+        let query = try XPathQuery("/xs:schema/xs:simpleType")
+        var results = query.nodesResult(with: doc.node)
+        if let found = process(results) {
+            return found
+        }
+
+        // finally look in common types
+        doc = try self.xsd(named: "commonTypes_v3.xsd")
+        results = query.nodesResult(with: doc.node)
+        if let found = process(results) {
+            return found
+        }
+        throw NemsisV3Error.notFound
     }
 
     public func validate(pcr: PatientCareReportV3) async throws -> [XMLValidationError] {
