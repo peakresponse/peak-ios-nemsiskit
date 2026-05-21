@@ -14,20 +14,16 @@ enum PatientCareReportV3Error: Error {
 }
 
 @MainActor
-public class PatientCareReportV3 {
-    public let version: NemsisV3
-    public let id: UUID
-    private var doc: Document!
+public class PatientCareReportV3: NemsisXmlV3 {
+    public private(set) var id: UUID!
 
-    public init(version: NemsisV3) throws {
-        self.version = version
+    override public init(version: NemsisV3) throws {
         id = UUID()
-        try reset()
+        try super.init(version: version)
     }
 
-    public init(version: NemsisV3, url fileURL: URL) throws {
-        self.version = version
-        doc = try Document(url: fileURL)
+    override public init(version: NemsisV3, url fileURL: URL) throws {
+        try super.init(version: version, url: fileURL)
         if let uuid = UUID(uuidString: doc.documentElement?[attribute: "UUID"] ?? "") {
             id = uuid
         } else {
@@ -35,8 +31,13 @@ public class PatientCareReportV3 {
         }
     }
 
-    public func reset() throws {
-        doc = Document()
+    override public init(clone: PatientCareReportV3) throws {
+        try super.init(clone: clone)
+        id = clone.id
+    }
+
+    override public func reset() throws {
+        try super.reset()
         let root = doc.makeDocumentElement(name: "PatientCareReport")
         root[attribute: "UUID"] = id.uuidString.lowercased()
 
@@ -92,9 +93,5 @@ public class PatientCareReportV3 {
             let subResults = query.nodesResult(with: resultNode)
             try reset(parentNode: node, results: subResults)
         }
-    }
-
-    public func xmlString() throws -> String {
-        return try doc.xmlString(options: [.indent, .noDeclaration])
     }
 }

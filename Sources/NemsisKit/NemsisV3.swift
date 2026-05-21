@@ -81,7 +81,90 @@ public class NemsisV3 {
         return try xsd(named: "\(named)_v3.xsd")
     }
 
-    public func emsElement(in xsd: String, xPath: String) throws -> Node {
+    public func emsElementType(in xsd: String, xPath: String) throws -> (String?, [(String, String)]?, [(String, String)]?) {
+        // get nemsis element definition
+        let node = try emsElementNode(in: xsd, xPath: xPath)
+        var typeNode: Node?
+        var typeExtNode: Node?
+        // look for type attribute reference first
+        if let typeName = node[attribute: "type"] {
+            typeNode = try emsTypeNode(in: xsd, named: typeName)
+        }
+        // if not found, look for complexType simpleContent extension definition
+        if typeNode == nil {
+            let query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
+            if let result = query.firstNodeResult(with: node) {
+                typeExtNode = result.node
+                if let typeName = typeExtNode?[attribute: "base"] {
+                    typeNode = try emsTypeNode(in: xsd, named: typeName)
+                }
+            }
+        }
+        // if still not found, skip
+        guard let typeNode = typeNode else { return (nil, nil, nil) }
+
+        // determine base primitive type, else skip
+        var query = try XPathQuery("./xs:restriction")
+        let result = query.firstNodeResult(with: typeNode)
+        guard let typeRestrictionNode = result?.node,
+              let baseType = typeRestrictionNode[attribute: "base"] else { return (nil, nil, nil) }
+
+        // if string, check for enumerated type
+        var enumeration: [(String, String)]?
+        if baseType == "xs:string" {
+            query = try XPathQuery("./xs:enumeration")
+            let results = query.nodesResult(with: typeRestrictionNode)
+            if !results.isEmpty {
+                // this is an enumerated type, collect name and values
+                enumeration = []
+                query = try XPathQuery("./xs:annotation/xs:documentation")
+                for result in results {
+                    if let node = result.node,
+                       let value = node[attribute: "value"],
+                       let docResult = query.firstNodeResult(with: node),
+                       let text = docResult.node?.textContent {
+                        enumeration?.append((text.trimmingCharacters(in: .whitespacesAndNewlines), value))
+                    }
+                }
+            }
+        }
+
+        // check for not values and pertinent negatives
+        var negatives: [(String, String)]?
+        if let typeExtNode = typeExtNode {
+            func collect(xpath: String) throws {
+                query = try XPathQuery(xpath)
+                if let result = query.firstNodeResult(with: typeExtNode), let node = result.node, let memberTypes = node[attribute: "memberTypes"] {
+                    let types = memberTypes.split(separator: " ")
+                    for type in types {
+                        let typeNode = try emsTypeNode(in: xsd, named: String(type))
+                        query = try XPathQuery("./xs:restriction/xs:enumeration")
+                        let results = query.nodesResult(with: typeNode)
+                        if !results.isEmpty {
+                            if negatives == nil {
+                                negatives = []
+                            }
+                            query = try XPathQuery("./xs:annotation/xs:documentation")
+                            for result in results {
+                                if let node = result.node,
+                                   let value = node[attribute: "value"],
+                                   let docResult = query.firstNodeResult(with: node),
+                                   let text = docResult.node?.textContent {
+                                    negatives?.append((text.trimmingCharacters(in: .whitespacesAndNewlines), value))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            try collect(xpath: "./xs:attribute[@name='PN']/xs:simpleType/xs:union")
+            try collect(xpath: "./xs:attribute[@name='NV']/xs:simpleType/xs:union")
+        }
+
+        return (baseType, enumeration, negatives)
+    }
+
+    public func emsElementNode(in xsd: String, xPath: String) throws -> Node {
         let doc = try self.xsd(named: xsd)
         let query = try XPathQuery(xPath)
         if let result = query.firstNodeResult(with: doc.node), let node = result.node {
@@ -90,7 +173,7 @@ public class NemsisV3 {
         throw NemsisV3Error.notFound
     }
 
-    public func emsTypeElement(in xsd: String, named: String) throws -> Node {
+    public func emsTypeNode(in xsd: String, named: String) throws -> Node {
         // first check if in cache
         if let node = types[named] {
             return node
