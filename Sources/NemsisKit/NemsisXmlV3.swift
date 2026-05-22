@@ -35,4 +35,9 @@ public class NemsisXmlV3 {
     public func xmlString() throws -> String {
         return try doc.xmlString(options: [.indent, .noDeclaration])
     }
+
+    public func firstNode(for xPath: String) throws -> Node? {
+        let query = try XPathQuery(xPath)
+        return query.firstNodeResult(with: doc.node)?.node
+    }
 }
