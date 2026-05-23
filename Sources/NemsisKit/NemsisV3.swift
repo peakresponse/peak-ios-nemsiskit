@@ -16,6 +16,23 @@ public enum NemsisV3Error: Error {
 
 let emsDataSetFilename = "EMSDataSet_v3.xsd"
 
+func enumTuples(for typeNode: Node) throws -> [(String, String)]? {
+    var query = try XPathQuery("./xs:restriction/xs:enumeration")
+    let results = query.nodesResult(with: typeNode)
+    if results.count > 0 {
+        var enumeration: [(String, String)] = []
+        query = try XPathQuery("./xs:annotation/xs:documentation")
+        for result in results {
+            guard let resultNode = result.node,
+                  let value = resultNode[attribute: "value"],
+                  let label = query.firstNodeResult(with: resultNode)?.node?.textContent else { continue }
+            enumeration.append((label, value))
+        }
+        return enumeration
+    }
+    return nil
+}
+
 @MainActor
 public class NemsisV3 {
     public let versionString: String
@@ -66,6 +83,15 @@ public class NemsisV3 {
         return pcr
     }
 
+    public func xsd(_ filename: String) throws -> Document {
+        if let doc = xsds[filename] {
+            return doc
+        }
+        let doc = try Document(url: xsdsDirectoryURL.appendingPathComponent(filename))
+        xsds[filename] = doc
+        return doc
+    }
+
     public func emsDataSetXsd() throws -> Document {
         if let doc = xsds[emsDataSetFilename] {
             return doc
@@ -86,11 +112,60 @@ public class NemsisV3 {
         }
         for result in results {
             guard let node = result.node, let schemaLocation = node[attribute: "schemaLocation"] else { continue }
-            let typeDoc = try Document(url: xsdsDirectoryURL.appendingPathComponent(schemaLocation))
+            let typeDoc = try xsd(schemaLocation)
             try cacheTypes(from: typeDoc.node, xpath: "/xs:schema/xs:simpleType[@name]")
             try cacheTypes(from: typeDoc.node, xpath: "/xs:schema/xs:complexType[@name]")
         }
         return doc
+    }
+
+    public func emsElement(in filename: String, xpath: String) throws -> Node? {
+        let doc = try xsd(filename)
+        let query = try XPathQuery(xpath)
+        return query.firstNodeResult(with: doc.node)?.node
+    }
+
+    public func emsElementTypeInfo(in filename: String, // swiftlint:disable:next large_tuple
+                                   xpath: String) throws -> (baseType: String?,
+                                                             enumeration: [(String, String)]?,
+                                                             negatives: [(String, String)]?) {
+        guard let elementNode = try emsElement(in: filename, xpath: xpath) else { throw NemsisV3Error.unexpected }
+        var typeName = elementNode[attribute: "type"]
+        var query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
+        let typeExtNode = query.firstNodeResult(with: elementNode)?.node
+        if typeName == nil, let typeExtNode {
+            typeName = typeExtNode[attribute: "base"]
+        }
+        guard let typeName, let typeNode = emsType(named: typeName) else { return (nil, nil, nil) }
+        query = try XPathQuery("./xs:restriction")
+        guard let restrictionNode = query.firstNodeResult(with: typeNode)?.node,
+              let baseType = restrictionNode[attribute: "base"] else {
+            throw NemsisV3Error.unexpected
+        }
+
+        let enumeration = try enumTuples(for: typeNode)
+
+        var negatives: [(String, String)]?
+        if let typeExtNode {
+            func addNegatives(name: String) throws {
+                query = try XPathQuery("./xs:attribute[@name='\(name)']/xs:simpleType/xs:union")
+                if let unionNode = query.firstNodeResult(with: typeExtNode)?.node,
+                   let memberTypes = unionNode[attribute: "memberTypes"]?.split(separator: " "),
+                   memberTypes.count > 0 {
+                    if negatives == nil {
+                        negatives = []
+                    }
+                    for memberType in memberTypes {
+                        guard let memberTypeNode = emsType(named: String(memberType)),
+                              let values = try enumTuples(for: memberTypeNode) else { continue }
+                        negatives?.append(contentsOf: values)
+                    }
+                }
+            }
+            try addNegatives(name: "PN")
+            try addNegatives(name: "NV")
+        }
+        return (baseType, enumeration, negatives)
     }
 
     public func emsType(named: String) -> Node? {
