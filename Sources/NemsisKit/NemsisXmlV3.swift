@@ -8,6 +8,10 @@
 import Foundation
 import Nodal
 
+public enum NemsisXmlV3Error: Error {
+    case unimplemented
+}
+
 @MainActor
 public class NemsisXmlV3 {
     public let version: NemsisV3
@@ -36,8 +40,16 @@ public class NemsisXmlV3 {
         return try doc.xmlString(options: [.indent, .noDeclaration])
     }
 
-    public func firstNode(for xPath: String) throws -> Node? {
-        let query = try XPathQuery(xPath)
+    public func firstNode(at xpath: String) throws -> Node? {
+        let query = try XPathQuery(xpath)
         return query.firstNodeResult(with: doc.node)?.node
+    }
+
+    public func insertNode(at xpath: String) throws -> Node {
+        throw NemsisXmlV3Error.unimplemented
+    }
+
+    public func removeNode(at xpath: String) throws {
+        throw NemsisXmlV3Error.unimplemented
     }
 }

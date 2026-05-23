@@ -39,6 +39,52 @@ struct NemsisKitTests {
     }
 
     @Test
+    func testTraversePCR() async throws {
+        let pcr = try PatientCareReportV3(version: version)
+        try pcr.traverse()
+    }
+
+    @Test
+    func testInsertIntoPCR() async throws {
+        let pcr = try PatientCareReportV3(version: version)
+        let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
+        let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        #expect(node02.nextSibling == node03)
+        print(try pcr.xmlString())
+    }
+
+    @Test
+    func testRemoveFromPCR() async throws {
+        let pcr = try PatientCareReportV3(version: version)
+        let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
+        print(try pcr.xmlString())
+        try pcr.removeNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        print(try pcr.xmlString())
+        var query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
+        try pcr.removeNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
+        print(try pcr.xmlString())
+        query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup")
+        #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
+    }
+
+    @Test
+    func testPCRFromURL() async throws {
+        let xmlURL = Bundle.module.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailXsd", withExtension: "xml")!
+        let pcr = try PatientCareReportV3(version: version, url: xmlURL)
+        let errors = try await version.validate(pcr: pcr)
+        print(errors)
+    }
+
+    @Test
+    func testValidation() async throws {
+        let pcr = try PatientCareReportV3(version: version)
+        let errors = try await version.validate(pcr: pcr)
+        print(errors)
+    }
+
+    @Test
     // swiftlint:disable:next function_body_length
     func testNewPCR() throws {
         let pcr = try PatientCareReportV3(version: version)
@@ -263,20 +309,5 @@ struct NemsisKitTests {
         <eOutcome.18 xsi:nil="true" NV="7701003" />
     </eOutcome>
 """))
-    }
-
-    @Test
-    func testPCRFromURL() async throws {
-        let xmlURL = Bundle.module.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailXsd", withExtension: "xml")!
-        let pcr = try PatientCareReportV3(version: version, url: xmlURL)
-        let errors = try await version.validate(pcr: pcr)
-        print(errors)
-    }
-
-    @Test
-    func testValidation() async throws {
-        let pcr = try PatientCareReportV3(version: version)
-        let errors = try await version.validate(pcr: pcr)
-        print(errors)
     }
 }
