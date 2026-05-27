@@ -45,11 +45,30 @@ public class NemsisXmlV3 {
         return query.firstNodeResult(with: doc.node)?.node
     }
 
+    public func nodes(at xpath: String) throws -> [Node] {
+        let query = try XPathQuery(xpath)
+        let results = query.nodesResult(with: doc.node)
+        var nodes: [Node] = []
+        for result in results {
+            if let node = result.node {
+                nodes.append(node)
+            }
+        }
+        return nodes
+    }
+
     public func insertNode(at xpath: String) throws -> Node {
         throw NemsisXmlV3Error.unimplemented
     }
 
     public func removeNode(at xpath: String) throws {
+        throw NemsisXmlV3Error.unimplemented
+    }
+
+    public func setValue(_ value: Any,
+                         negative: String? = nil,
+                         attributes: [String: String]? = nil,
+                         at xpath: String) throws {
         throw NemsisXmlV3Error.unimplemented
     }
 }

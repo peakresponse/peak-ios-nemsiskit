@@ -193,4 +193,62 @@ public class PatientCareReportV3: NemsisXmlV3 {
             return true
         })
     }
+
+    // swiftlint:disable:next cyclomatic_complexity
+    override public func setValue(_ value: Any,
+                                  negative: String? = nil,
+                                  attributes: [String: String]? = nil,
+                                  at xpath: String) throws {
+        var node = try firstNode(at: xpath)
+        if value != nil {
+            // set value in document
+            if node == nil {
+                node = try insertNode(at: xpath)
+            }
+            if let node = node {
+                switch value {
+                case let value as String:
+                    node.textContent = value
+                case let value as Date:
+                    var formatted = value
+                        .formatted(
+                            Date.ISO8601FormatStyle(timeZone: .autoupdatingCurrent)
+                                .year()
+                                .month()
+                                .day()
+                                .time(includingFractionalSeconds: false)
+                                .timeZone(separator: .colon))
+                    if formatted.hasSuffix("Z") {
+                        formatted.removeLast()
+                        formatted = "\(formatted)+00:00"
+                    }
+                    node.textContent = formatted
+                default:
+                    node.textContent = String(describing: value as AnyObject)
+                }
+                node[attribute: "NV"] = nil
+                node[attribute: "PN"] = nil
+                node[attribute: "xsi:nil"] = nil
+            }
+        } else {
+            // set with negative, if present
+            if let negative = negative {
+                if node == nil {
+                    node = try insertNode(at: xpath)
+                }
+                if let node = node {
+                    node.removeAllChildren()
+                    node[attribute: "xsi:nil"] = "true"
+                    if negative.starts(with: "8") {
+                        node[attribute: "PN"] = negative
+                    } else {
+                        node[attribute: "NV"] = negative
+                    }
+                }
+            } else {
+                // remove or set null with negative, per schema
+                try removeNode(at: xpath)
+            }
+        }
+    }
 }
