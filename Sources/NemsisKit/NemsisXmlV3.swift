@@ -65,7 +65,7 @@ public class NemsisXmlV3 {
         throw NemsisXmlV3Error.unimplemented
     }
 
-    public func setValue(_ value: Any,
+    public func setValue(_ value: Any?,
                          negative: String? = nil,
                          attributes: [String: String]? = nil,
                          at xpath: String) throws {

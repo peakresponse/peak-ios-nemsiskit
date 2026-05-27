@@ -195,12 +195,12 @@ public class PatientCareReportV3: NemsisXmlV3 {
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    override public func setValue(_ value: Any,
+    override public func setValue(_ value: Any?,
                                   negative: String? = nil,
                                   attributes: [String: String]? = nil,
                                   at xpath: String) throws {
         var node = try firstNode(at: xpath)
-        if value != nil {
+        if let value, !(value is NSObject?) || (value as? NSObject) != nil {
             // set value in document
             if node == nil {
                 node = try insertNode(at: xpath)
