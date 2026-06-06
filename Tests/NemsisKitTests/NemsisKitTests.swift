@@ -7,6 +7,7 @@
 
 import Foundation
 import Nodal
+import SemVer
 import Testing
 
 @testable import NemsisKit
@@ -39,6 +40,15 @@ struct NemsisKitTests {
     }
 
     @Test
+    func testNemsisVersion() {
+        let v350 = Version(nemsisVersion: "3.5.0.190522")!
+        let v350cp5 = Version(nemsisVersion: "3.5.0.250403CP5")!
+        #expect(v350 < v350cp5)
+        let v350cp6 = Version(nemsisVersion: "3.5.0.251001CP6")!
+        #expect(v350cp6 > v350cp5)
+    }
+
+    @Test
     func testTraversePCR() async throws {
         let pcr = try PatientCareReportV3(version: version)
         try pcr.traverse()
@@ -56,8 +66,8 @@ struct NemsisKitTests {
     @Test
     func testRemoveFromPCR() async throws {
         let pcr = try PatientCareReportV3(version: version)
-        let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
-        let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
+        _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         print(try pcr.xmlString())
         try pcr.removeNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         print(try pcr.xmlString())

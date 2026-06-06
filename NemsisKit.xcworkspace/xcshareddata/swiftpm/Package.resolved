@@ -1,5 +1,5 @@
 {
-  "originHash" : "fcd8959d047e772aeb907445eeacd693326dffffdb418dd9c840e57632aab1e1",
+  "originHash" : "5eaff781d6d014703979b79306b780c352c2db1b0e0cf79fb9e555960542dd6b",
   "pins" : [
     {
       "identity" : "nodal",
@@ -8,6 +8,24 @@
       "state" : {
         "branch" : "xpathnode-access",
         "revision" : "677b8021488f1c6a7906ef56ebfb4d17a8f1b03f"
+      }
+    },
+    {
+      "identity" : "semver",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sersoft-gmbh/semver",
+      "state" : {
+        "revision" : "e6f0d2ee46e24af6a6cee91afcf44018de48de69",
+        "version" : "5.5.0"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax",
+      "state" : {
+        "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
+        "version" : "603.0.1"
       }
     },
     {

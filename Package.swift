@@ -18,6 +18,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/peakresponse/Nodal", branch: "xpathnode-access"),
         .package(url: "https://github.com/peakresponse/swift-xml-lint", branch: "dev"),
+        .package(url: "https://github.com/sersoft-gmbh/semver", from: "5.0.0"),
         .package(url: "https://github.com/SimplyDanny/SwiftLintPlugins", from: "0.63.2")
     ],
     targets: [
@@ -27,6 +28,7 @@ let package = Package(
             name: "NemsisKit",
             dependencies: [
                 .product(name: "Nodal", package: "Nodal"),
+                .product(name: "SemVer", package: "semver"),
                 .product(name: "SwiftXMLLint", package: "swift-xml-lint")
             ],
             resources: [
