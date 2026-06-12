@@ -21,7 +21,7 @@ public enum NemsisBoolean: String {
 public enum NemsisCodeType: String {
     case icd10 = "9924001"
     case rxnorm = "9924003"
-    case snomded = "9924005"
+    case snomed = "9924005"
 }
 
 public enum NemsisNegative: String {
