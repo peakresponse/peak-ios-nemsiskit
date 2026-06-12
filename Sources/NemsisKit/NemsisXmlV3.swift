@@ -61,14 +61,15 @@ public class NemsisXmlV3 {
         throw NemsisXmlV3Error.unimplemented
     }
 
-    public func removeNode(at xpath: String) throws {
+    public func removeNodes(at xpath: String) throws {
         throw NemsisXmlV3Error.unimplemented
     }
 
-    public func setValue(_ value: Any?,
-                         negative: String? = nil,
-                         attributes: [String: String]? = nil,
-                         at xpath: String) throws {
+    public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
+        throw NemsisXmlV3Error.unimplemented
+    }
+
+    public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
         throw NemsisXmlV3Error.unimplemented
     }
 }

@@ -13,7 +13,7 @@ let package = Package(
         .library(
             name: "NemsisKit",
             targets: ["NemsisKit"]
-        ),
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/peakresponse/Nodal", branch: "xpathnode-access"),
@@ -45,7 +45,7 @@ let package = Package(
             ],
             swiftSettings: [.interoperabilityMode(.Cxx)],
             plugins: [.plugin(name: "SwiftLintBuildToolPlugin", package: "SwiftLintPlugins")]
-        ),
+        )
     ],
     swiftLanguageModes: [.v6]
 )

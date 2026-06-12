@@ -60,7 +60,10 @@ struct NemsisKitTests {
         let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         #expect(node02.nextSibling == node03)
-        print(try pcr.xmlString())
+
+        let node141 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
+        let node142 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
+        #expect(node141.nextSibling == node142)
     }
 
     @Test
@@ -69,14 +72,36 @@ struct NemsisKitTests {
         _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         print(try pcr.xmlString())
-        try pcr.removeNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        try pcr.removeNodes(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         print(try pcr.xmlString())
         var query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
-        try pcr.removeNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
+        try pcr.removeNodes(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         print(try pcr.xmlString())
         query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup")
         #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
+    }
+
+    @Test
+    func testNemsisValues() throws {
+        let pcr = try PatientCareReportV3(version: version)
+        print(try pcr.xmlString())
+        let values = try pcr.nemsisValues(at: "/PatientCareReport/ePatient/ePatient.07")
+        #expect(values.count == 1)
+        #expect(values[0].isNil)
+        #expect(values[0].negative == .notRecorded)
+    }
+
+    @Test
+    func testSetNemsisValues() throws {
+        let pcr = try PatientCareReportV3(version: version)
+        try pcr.setNemsisValues([
+            NemsisValue(value: "2514001"),
+            NemsisValue(value: "2514003")
+        ], at: "/PatientCareReport/ePatient/ePatient.14")
+        try pcr.setNemsisValues([NemsisValue(negativeValue: "7701003")],
+                                at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        print(try pcr.xmlString())
     }
 
     @Test

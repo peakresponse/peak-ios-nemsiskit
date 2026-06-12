@@ -123,10 +123,13 @@ public class PatientCareReportV3: NemsisXmlV3 {
             if isFound {
                 return true
             }
-            node = parentNode?[element: name]
+            let nodes = parentNode?[elements: name]
+            node = nodes?.last
             if name == nextTarget {
                 if node == nil {
                     node = parentNode?.addElement(name, at: prevNode != nil ? .after(prevNode!) : .first)
+                } else if target.isEmpty {
+                    node = parentNode?.addElement(name, at: .after(node!))
                 }
                 if target.isEmpty {
                     isFound = true
@@ -151,7 +154,8 @@ public class PatientCareReportV3: NemsisXmlV3 {
         throw NemsisV3Error.unexpected
     }
 
-    override public func removeNode(at xpath: String) throws {
+    // swiftlint:disable:next cyclomatic_complexity
+    override public func removeNodes(at xpath: String) throws {
         var target = xpath.split(separator: "/")
         var nextTarget = String(target.removeFirst())
         if nextTarget != "PatientCareReport" {
@@ -163,14 +167,21 @@ public class PatientCareReportV3: NemsisXmlV3 {
             if isFound {
                 return true
             }
-            let node = parentNode?[element: name]
+            let nodes = parentNode?[elements: name]
             if name == nextTarget {
                 if target.isEmpty {
                     isFound = true
-                    if let node {
-                        if schemaNode[attribute: "minOccurs"] == "0" {
+                    if schemaNode[attribute: "minOccurs"] == "0" {
+                        for node in nodes ?? [] {
                             parentNode?.removeChild(node)
-                        } else {
+                        }
+                    } else {
+                        if let nodes, nodes.count > 1 {
+                            for node in nodes[1...] {
+                                parentNode?.removeChild(node)
+                            }
+                        }
+                        if let node = nodes?.first {
                             node.removeAllChildren()
                             if try isNillableNotRecorded(schemaNode: schemaNode) {
                                 node[attribute: "xsi:nil"] = "true"
@@ -194,60 +205,28 @@ public class PatientCareReportV3: NemsisXmlV3 {
         })
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
-    override public func setValue(_ value: Any?,
-                                  negative: String? = nil,
-                                  attributes: [String: String]? = nil,
-                                  at xpath: String) throws {
-        var node = try firstNode(at: xpath)
-        if let value, !(value is NSObject?) || (value as? NSObject) != nil {
-            // set value in document
-            if node == nil {
-                node = try insertNode(at: xpath)
-            }
-            if let node = node {
-                switch value {
-                case let value as String:
-                    node.textContent = value
-                case let value as Date:
-                    var formatted = value
-                        .formatted(
-                            Date.ISO8601FormatStyle(timeZone: .autoupdatingCurrent)
-                                .year()
-                                .month()
-                                .day()
-                                .time(includingFractionalSeconds: false)
-                                .timeZone(separator: .colon))
-                    if formatted.hasSuffix("Z") {
-                        formatted.removeLast()
-                        formatted = "\(formatted)+00:00"
-                    }
-                    node.textContent = formatted
-                default:
-                    node.textContent = String(describing: value as AnyObject)
-                }
-                node[attribute: "NV"] = nil
-                node[attribute: "PN"] = nil
-                node[attribute: "xsi:nil"] = nil
-            }
-        } else {
-            // set with negative, if present
-            if let negative = negative {
+    override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
+        let nodes = try nodes(at: xpath)
+        return nodes.map { NemsisValue(node: $0) }
+    }
+
+    override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
+        // first remove existing nodes or set null with negative, per schema
+        try removeNodes(at: xpath)
+        if values.count > 0 {
+            var node = try firstNode(at: xpath)
+            for value in values {
                 if node == nil {
                     node = try insertNode(at: xpath)
                 }
-                if let node = node {
-                    node.removeAllChildren()
-                    node[attribute: "xsi:nil"] = "true"
-                    if negative.starts(with: "8") {
-                        node[attribute: "PN"] = negative
-                    } else {
-                        node[attribute: "NV"] = negative
+                node?.textContent = value.text ?? ""
+                node?.removeAllAttributes()
+                if let attributes = value.attributes {
+                    for (key, value) in attributes {
+                        node?[attribute: key] = value
                     }
                 }
-            } else {
-                // remove or set null with negative, per schema
-                try removeNode(at: xpath)
+                node = nil
             }
         }
     }

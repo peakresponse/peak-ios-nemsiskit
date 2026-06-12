@@ -18,7 +18,7 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Validate", for: .normal)
@@ -36,7 +36,7 @@ class ViewController: UIViewController {
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
         self.webView = webView
-        
+
         let fixturesURL = Bundle.main.url(forResource: "Fixtures/\(versionString)", withExtension: nil)!
         let xsdsURL = fixturesURL.appendingPathComponent("xsds")
         let xsdURLs = try! FileManager.default.contentsOfDirectory(at: xsdsURL, includingPropertiesForKeys: nil)
@@ -58,7 +58,7 @@ class ViewController: UIViewController {
         }
         print(version.versionDirectoryURL)
     }
-    
+
     @objc func validatePressed() {
         let xmlURL = Bundle.main.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailSchematron_v351", withExtension: "xml")!
         let pcr = try! PatientCareReportV3(version: version, url: xmlURL)
