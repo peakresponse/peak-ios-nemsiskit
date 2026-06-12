@@ -148,7 +148,11 @@ public class NemsisValue: NSObject {
             }
             text = formatted
         default:
-            text = String(describing: value)
+            if let value {
+                text = String(describing: value)
+            } else {
+                text = nil
+            }
         }
         self.negativeValue = text == nil && negativeValue == nil ? NemsisNegative.notRecorded.rawValue : negativeValue
     }
