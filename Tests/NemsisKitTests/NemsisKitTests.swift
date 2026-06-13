@@ -101,6 +101,8 @@ struct NemsisKitTests {
         ], at: "/PatientCareReport/ePatient/ePatient.14")
         try pcr.setNemsisValues([NemsisValue(negativeValue: "7701003")],
                                 at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        try pcr.setNemsisValues([NemsisValue(value: "3326001")],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[0]/eVitals.26")
         print(try pcr.xmlString())
     }
 

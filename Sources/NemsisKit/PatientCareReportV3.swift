@@ -27,6 +27,9 @@ func isNillableNotRecorded(schemaNode: Node) throws -> Bool {
     return false
 }
 
+// swiftlint:disable:next force_try
+let indexExpr = try! NSRegularExpression(pattern: #"([^\[]+)\[(\d+)\]"#, options: [.caseInsensitive])
+
 @MainActor
 public class PatientCareReportV3: NemsisXmlV3 {
     public private(set) var id: UUID!
@@ -112,10 +115,22 @@ public class PatientCareReportV3: NemsisXmlV3 {
     override public func insertNode(at xpath: String) throws -> Node {
         var target = xpath.split(separator: "/")
         var nextTarget = String(target.removeFirst())
+        var nextIndex: Int?
         if nextTarget != "PatientCareReport" {
             throw NemsisV3Error.unexpected
         }
         nextTarget = String(target.removeFirst())
+        if let match = indexExpr.firstMatch(in: nextTarget,
+                                            options: [],
+                                            range: NSRange(nextTarget.startIndex..<nextTarget.endIndex,
+                                                           in: nextTarget)) {
+            if match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: nextTarget) {
+                nextTarget = String(nextTarget[range])
+            }
+            if match.numberOfRanges > 2, let range = Range(match.range(at: 2), in: nextTarget) {
+                nextIndex = Int(String(nextTarget[range]))
+            }
+        }
         var isFound = false
         var node: Node?
         var prevNode: Node?
@@ -124,8 +139,12 @@ public class PatientCareReportV3: NemsisXmlV3 {
                 return true
             }
             let nodes = parentNode?[elements: name]
-            node = nodes?.last
             if name == nextTarget {
+                if let nextIndex, nextIndex < (nodes?.count ?? 0) {
+                    node = nodes?[nextIndex]
+                } else {
+                    node = nodes?.last
+                }
                 if node == nil {
                     node = parentNode?.addElement(name, at: prevNode != nil ? .after(prevNode!) : .first)
                 } else if target.isEmpty {
@@ -140,8 +159,22 @@ public class PatientCareReportV3: NemsisXmlV3 {
                     return true
                 }
                 nextTarget = String(target.removeFirst())
+                nextIndex = nil
+                if let match = indexExpr.firstMatch(in: nextTarget,
+                                                    options: [],
+                                                    range: NSRange(nextTarget.startIndex..<nextTarget.endIndex,
+                                                                   in: nextTarget)) {
+                    if match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: nextTarget) {
+                        nextTarget = String(nextTarget[range])
+                    }
+                    if match.numberOfRanges > 2, let range = Range(match.range(at: 2), in: nextTarget) {
+                        nextIndex = Int(String(nextTarget[range]))
+                    }
+                }
                 prevNode = nil
                 return false
+            } else {
+                node = nodes?.last
             }
             prevNode = node
             return true
