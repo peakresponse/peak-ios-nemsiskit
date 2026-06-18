@@ -61,7 +61,7 @@ public class NemsisXmlV3 {
         throw NemsisXmlV3Error.unimplemented
     }
 
-    public func removeNodes(at xpath: String) throws {
+    public func removeNodes(at xpath: String, insertNV: Bool = true) throws {
         throw NemsisXmlV3Error.unimplemented
     }
 

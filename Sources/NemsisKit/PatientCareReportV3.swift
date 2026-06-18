@@ -30,6 +30,26 @@ func isNillableNotRecorded(schemaNode: Node) throws -> Bool {
 // swiftlint:disable:next force_try
 let indexExpr = try! NSRegularExpression(pattern: #"([^\[]+)\[(\d+)\]"#, options: [.caseInsensitive])
 
+func getTargetAndIndex(for xpath: String) -> (target: String, index: Int?) {
+    var target = xpath
+    var index: Int?
+    if let match = indexExpr.firstMatch(in: xpath,
+                                        options: [],
+                                        range: NSRange(xpath.startIndex..<xpath.endIndex,
+                                                       in: xpath)) {
+        if match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: xpath) {
+            target = String(xpath[range])
+        }
+        if match.numberOfRanges > 2, let range = Range(match.range(at: 2), in: xpath) {
+            index = Int(String(xpath[range]))
+            if index != nil {
+                index = index! - 1
+            }
+        }
+    }
+    return (target, index)
+}
+
 @MainActor
 public class PatientCareReportV3: NemsisXmlV3 {
     public private(set) var id: UUID!
@@ -55,7 +75,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
 
     func traverse(schema: [XPathNode]? = nil,
                   with node: Node? = nil,
-                  before: ((Node?, String, Node) throws -> Bool)? = nil,
+                  before: ((Node?, String, Node) throws -> Node?)? = nil,
                   after: ((Node?, String, Node) throws -> Bool)? = nil) throws {
         var schema = schema
         var node = node
@@ -71,7 +91,8 @@ public class PatientCareReportV3: NemsisXmlV3 {
         if let schema {
             for result in schema {
                 guard let schemaNode = result.node, let name = schemaNode[attribute: "name"] else { continue }
-                if try before?(node, name, schemaNode) ?? false {
+                let child = try before?(node, name, schemaNode)
+                if child == nil {
                     continue
                 }
                 var results: [XPathNode]?
@@ -84,7 +105,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
                     results = query.nodesResult(with: schemaNode)
                 }
                 if let results, results.count > 0 {
-                    try traverse(schema: results, with: node?[element: name], before: before, after: after)
+                    try traverse(schema: results, with: child, before: before, after: after)
                 }
                 if try after?(node, name, schemaNode) ?? false {
                     return
@@ -99,16 +120,16 @@ public class PatientCareReportV3: NemsisXmlV3 {
         root[attribute: "UUID"] = id.uuidString.lowercased()
         try traverse(before: { (parentNode, name, schemaNode) in
             if let minOccurs = schemaNode[attribute: "minOccurs"], minOccurs == "0" {
-                return true
+                return nil
             }
             if let node = parentNode?.addElement(name) {
                 if try isNillableNotRecorded(schemaNode: schemaNode) {
                     node[attribute: "xsi:nil"] = "true"
                     node[attribute: "NV"] = "7701003"
-                    return true
+                    return nil
                 }
             }
-            return false
+            return parentNode?[element: name]
         })
     }
 
@@ -120,23 +141,13 @@ public class PatientCareReportV3: NemsisXmlV3 {
             throw NemsisV3Error.unexpected
         }
         nextTarget = String(target.removeFirst())
-        if let match = indexExpr.firstMatch(in: nextTarget,
-                                            options: [],
-                                            range: NSRange(nextTarget.startIndex..<nextTarget.endIndex,
-                                                           in: nextTarget)) {
-            if match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: nextTarget) {
-                nextTarget = String(nextTarget[range])
-            }
-            if match.numberOfRanges > 2, let range = Range(match.range(at: 2), in: nextTarget) {
-                nextIndex = Int(String(nextTarget[range]))
-            }
-        }
-        var isFound = false
+        (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
+        var isDone = false
         var node: Node?
         var prevNode: Node?
         try traverse(before: { (parentNode, name, schemaNode) in
-            if isFound {
-                return true
+            if isDone {
+                return nil
             }
             let nodes = parentNode?[elements: name]
             if name == nextTarget {
@@ -151,33 +162,24 @@ public class PatientCareReportV3: NemsisXmlV3 {
                     node = parentNode?.addElement(name, at: .after(node!))
                 }
                 if target.isEmpty {
-                    isFound = true
+                    isDone = true
                     if try isNillableNotRecorded(schemaNode: schemaNode) {
                         node?[attribute: "xsi:nil"] = "true"
                         node?[attribute: "NV"] = "7701003"
                     }
-                    return true
+                    return nil
                 }
                 nextTarget = String(target.removeFirst())
-                nextIndex = nil
-                if let match = indexExpr.firstMatch(in: nextTarget,
-                                                    options: [],
-                                                    range: NSRange(nextTarget.startIndex..<nextTarget.endIndex,
-                                                                   in: nextTarget)) {
-                    if match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: nextTarget) {
-                        nextTarget = String(nextTarget[range])
-                    }
-                    if match.numberOfRanges > 2, let range = Range(match.range(at: 2), in: nextTarget) {
-                        nextIndex = Int(String(nextTarget[range]))
-                    }
-                }
+                (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
                 prevNode = nil
-                return false
+                return node
             } else {
                 node = nodes?.last
             }
-            prevNode = node
-            return true
+            if node != nil {
+                prevNode = node
+            }
+            return nil
         }, after: { (_, _, _) in
             return true
         })
@@ -188,23 +190,25 @@ public class PatientCareReportV3: NemsisXmlV3 {
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    override public func removeNodes(at xpath: String) throws {
+    override public func removeNodes(at xpath: String, insertNV: Bool = true) throws {
         var target = xpath.split(separator: "/")
         var nextTarget = String(target.removeFirst())
+        var nextIndex: Int?
         if nextTarget != "PatientCareReport" {
             throw NemsisV3Error.unexpected
         }
         nextTarget = String(target.removeFirst())
+        (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
         var isFound = false
         try traverse(before: { (parentNode, name, schemaNode) in
             if isFound {
-                return true
+                return nil
             }
             let nodes = parentNode?[elements: name]
             if name == nextTarget {
                 if target.isEmpty {
                     isFound = true
-                    if schemaNode[attribute: "minOccurs"] == "0" {
+                    if !insertNV || schemaNode[attribute: "minOccurs"] == "0" {
                         for node in nodes ?? [] {
                             parentNode?.removeChild(node)
                         }
@@ -222,12 +226,16 @@ public class PatientCareReportV3: NemsisXmlV3 {
                             }
                         }
                     }
-                    return true
+                    return nil
                 }
                 nextTarget = String(target.removeFirst())
-                return false
+                (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
+                if let nextIndex, nextIndex < (nodes?.count ?? 0) {
+                    return nodes?[nextIndex]
+                }
+                return nodes?.first
             }
-            return true
+            return nil
         }, after: { (parentNode, name, schemaNode) in
             if let node = parentNode?[element: name], node.elements.isEmpty {
                 if schemaNode[attribute: "minOccurs"] == "0" {
@@ -245,7 +253,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
 
     override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
         // first remove existing nodes or set null with negative, per schema
-        try removeNodes(at: xpath)
+        try removeNodes(at: xpath, insertNV: false)
         if values.count > 0 {
             var node = try firstNode(at: xpath)
             for value in values {

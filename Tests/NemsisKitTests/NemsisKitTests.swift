@@ -102,8 +102,12 @@ struct NemsisKitTests {
         try pcr.setNemsisValues([NemsisValue(negativeValue: "7701003")],
                                 at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         try pcr.setNemsisValues([NemsisValue(value: "3326001")],
-                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[0]/eVitals.26")
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
         print(try pcr.xmlString())
+        let query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
+        let eVitals26node = query.firstNodeResult(with: pcr.doc.node)?.node
+        #expect(eVitals26node?.textContent == "3326001")
+        #expect(eVitals26node?.previousSibling?.name == "eVitals.GlasgowScoreGroup")
     }
 
     @Test
