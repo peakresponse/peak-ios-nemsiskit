@@ -143,11 +143,25 @@ public class PatientCareReportV3: NemsisXmlV3 {
         nextTarget = String(target.removeFirst())
         (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
         var isDone = false
+        var stopNode: Node?
         var node: Node?
         var prevNode: Node?
         try traverse(before: { (parentNode, name, schemaNode) in
-            if isDone {
-                return nil
+            if stopNode != nil {
+                if isDone {
+                    return nil
+                }
+                if let minOccurs = schemaNode[attribute: "minOccurs"], minOccurs == "0" {
+                    return nil
+                }
+                if let node = parentNode?.addElement(name) {
+                    if try isNillableNotRecorded(schemaNode: schemaNode) {
+                        node[attribute: "xsi:nil"] = "true"
+                        node[attribute: "NV"] = "7701003"
+                        return nil
+                    }
+                }
+                return parentNode?[element: name]
             }
             let nodes = parentNode?[elements: name]
             if name == nextTarget {
@@ -162,12 +176,14 @@ public class PatientCareReportV3: NemsisXmlV3 {
                     node = parentNode?.addElement(name, at: .after(node!))
                 }
                 if target.isEmpty {
-                    isDone = true
+                    stopNode = parentNode
                     if try isNillableNotRecorded(schemaNode: schemaNode) {
+                        isDone = true
                         node?[attribute: "xsi:nil"] = "true"
                         node?[attribute: "NV"] = "7701003"
+                        return nil
                     }
-                    return nil
+                    return node
                 }
                 nextTarget = String(target.removeFirst())
                 (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
@@ -180,8 +196,15 @@ public class PatientCareReportV3: NemsisXmlV3 {
                 prevNode = node
             }
             return nil
-        }, after: { (_, _, _) in
-            return true
+        }, after: { (parentNode, _, _) in
+            if isDone {
+                return true
+            }
+            if parentNode == stopNode {
+                isDone = true
+                return true
+            }
+            return false
         })
         if let node = node {
             return node
@@ -189,7 +212,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
         throw NemsisV3Error.unexpected
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     override public func removeNodes(at xpath: String, insertNV: Bool = true) throws {
         var target = xpath.split(separator: "/")
         var nextTarget = String(target.removeFirst())

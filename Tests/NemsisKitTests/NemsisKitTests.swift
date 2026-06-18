@@ -64,6 +64,10 @@ struct NemsisKitTests {
         let node141 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
         let node142 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
         #expect(node141.nextSibling == node142)
+
+        let newVitals = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
+        #expect(!newVitals.elements.isEmpty)
+        print(try pcr.xmlString())
     }
 
     @Test
