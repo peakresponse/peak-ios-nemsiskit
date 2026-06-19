@@ -141,26 +141,11 @@ public class Nemsis {
         return elements[emsDataSetFilename]?[named]
     }
 
-    public func emsElementTypeInfo(in filename: String, // swiftlint:disable:next large_tuple
-                                   xpath: String) throws -> (baseType: String?,
-                                                             enumeration: [(String, String)]?,
-                                                             negatives: [(String, String)]?) {
-        guard let elementNode = try emsElement(in: filename, xpath: xpath) else { throw NemsisError.unexpected }
-        return try emsElementTypeInfo(elementNode: elementNode)
-    }
-
     // swiftlint:disable:next large_tuple
     public func emsElementTypeInfo(named: String) throws -> (baseType: String?,
                                                              enumeration: [(String, String)]?,
                                                              negatives: [(String, String)]?) {
         guard let elementNode = emsElement(named: named) else { throw NemsisError.unexpected }
-        return try emsElementTypeInfo(elementNode: elementNode)
-    }
-
-    // swiftlint:disable:next large_tuple
-    public func emsElementTypeInfo(elementNode: Node) throws -> (baseType: String?,
-                                                                 enumeration: [(String, String)]?,
-                                                                 negatives: [(String, String)]?) {
         var typeName = elementNode[attribute: "type"]
         var query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
         let typeExtNode = query.firstNodeResult(with: elementNode)?.node
