@@ -10,7 +10,7 @@ import Nodal
 import SwiftXMLLint
 import WebKit
 
-public enum NemsisV3Error: Error {
+public enum NemsisError: Error {
     case notFound, unexpected
 }
 
@@ -34,7 +34,7 @@ func enumTuples(for typeNode: Node) throws -> [(String, String)]? {
 }
 
 @MainActor
-public class NemsisV3 {
+public class Nemsis {
     public let versionString: String
     public let versionDirectoryURL: URL
     public let xsdsDirectoryURL: URL
@@ -57,7 +57,7 @@ public class NemsisV3 {
         let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         versionDirectoryURL = appSupportURL
             .appendingPathComponent("NemsisKit", isDirectory: true)
-            .appendingPathComponent("NemsisV3", isDirectory: true)
+            .appendingPathComponent("NemsisVersion", isDirectory: true)
             .appendingPathComponent(version, isDirectory: true)
         try FileManager.default.createDirectory(at: versionDirectoryURL, withIntermediateDirectories: true)
         xsdsDirectoryURL = versionDirectoryURL.appendingPathComponent("xsds")
@@ -78,8 +78,8 @@ public class NemsisV3 {
         schematronValidator = SchematronValidator(baseURL: schsDirectoryURL)
     }
 
-    public func newPCR() throws -> PatientCareReportV3 {
-        let pcr = try PatientCareReportV3(version: self)
+    public func newPCR() throws -> PatientCareReport {
+        let pcr = try PatientCareReport(version: self)
         return pcr
     }
 
@@ -129,7 +129,7 @@ public class NemsisV3 {
                                    xpath: String) throws -> (baseType: String?,
                                                              enumeration: [(String, String)]?,
                                                              negatives: [(String, String)]?) {
-        guard let elementNode = try emsElement(in: filename, xpath: xpath) else { throw NemsisV3Error.unexpected }
+        guard let elementNode = try emsElement(in: filename, xpath: xpath) else { throw NemsisError.unexpected }
         var typeName = elementNode[attribute: "type"]
         var query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
         let typeExtNode = query.firstNodeResult(with: elementNode)?.node
@@ -140,7 +140,7 @@ public class NemsisV3 {
         query = try XPathQuery("./xs:restriction")
         guard let restrictionNode = query.firstNodeResult(with: typeNode)?.node,
               let baseType = restrictionNode[attribute: "base"] else {
-            throw NemsisV3Error.unexpected
+            throw NemsisError.unexpected
         }
 
         let enumeration = try enumTuples(for: typeNode)
@@ -172,7 +172,7 @@ public class NemsisV3 {
         return types[emsDataSetFilename]?[named]
     }
 
-    public func validate(pcr: PatientCareReportV3) async throws -> [XMLValidationError] {
+    public func validate(pcr: PatientCareReport) async throws -> [XMLValidationError] {
         let validator = try XMLValidator(xsdURL: emsDataSetXsdURL)
         let wrappedXML = try wrappedXml(pcr: pcr)
         var errors = try validator.validate(xml: wrappedXML)
@@ -185,7 +185,7 @@ public class NemsisV3 {
         return errors
     }
 
-    private func wrappedXml(pcr: PatientCareReportV3) throws -> String {
+    private func wrappedXml(pcr: PatientCareReport) throws -> String {
         // swiftlint:disable line_length
         return """
 <?xml version="1.0" encoding="UTF-8"?>

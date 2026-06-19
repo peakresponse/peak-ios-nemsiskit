@@ -14,7 +14,7 @@ let versionString = "3.5.1.251001CP2"
 class ViewController: UIViewController {
     weak var button: UIButton!
     weak var webView: WKWebView!
-    var version: NemsisV3!
+    var version: Nemsis!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,7 +30,7 @@ class ViewController: UIViewController {
         ])
         self.button = button
 
-        version = try! NemsisV3(version: versionString)
+        version = try! Nemsis(version: versionString)
 
         let webView = version.webView
         webView.translatesAutoresizingMaskIntoConstraints = false
@@ -61,7 +61,7 @@ class ViewController: UIViewController {
 
     @objc func validatePressed() {
         let xmlURL = Bundle.main.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailSchematron_v351", withExtension: "xml")!
-        let pcr = try! PatientCareReportV3(version: version, url: xmlURL)
+        let pcr = try! PatientCareReport(version: version, url: xmlURL)
         Task { @MainActor in
             let errors = try! await version.validate(pcr: pcr)
             print(errors)

@@ -8,26 +8,26 @@
 import Foundation
 import Nodal
 
-public enum NemsisXmlV3Error: Error {
+public enum NemsisXmlError: Error {
     case unimplemented
 }
 
 @MainActor
-public class NemsisXmlV3 {
-    public let version: NemsisV3
+public class NemsisXml {
+    public let version: Nemsis
     var doc: Document!
 
-    public init(version: NemsisV3) throws {
+    public init(version: Nemsis) throws {
         self.version = version
         try reset()
     }
 
-    public init(version: NemsisV3, url fileURL: URL) throws {
+    public init(version: Nemsis, url fileURL: URL) throws {
         self.version = version
         doc = try Document(url: fileURL)
     }
 
-    public init(clone: PatientCareReportV3) throws {
+    public init(clone: PatientCareReport) throws {
         version = clone.version
         doc = try Document(string: clone.xmlString())
     }
@@ -58,18 +58,18 @@ public class NemsisXmlV3 {
     }
 
     public func insertNode(at xpath: String) throws -> Node {
-        throw NemsisXmlV3Error.unimplemented
+        throw NemsisXmlError.unimplemented
     }
 
     public func removeNodes(at xpath: String, insertNV: Bool = true) throws {
-        throw NemsisXmlV3Error.unimplemented
+        throw NemsisXmlError.unimplemented
     }
 
     public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
-        throw NemsisXmlV3Error.unimplemented
+        throw NemsisXmlError.unimplemented
     }
 
     public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
-        throw NemsisXmlV3Error.unimplemented
+        throw NemsisXmlError.unimplemented
     }
 }

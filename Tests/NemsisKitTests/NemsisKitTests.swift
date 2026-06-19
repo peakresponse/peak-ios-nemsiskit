@@ -16,10 +16,10 @@ let versionString = "3.5.1.251001CP2"
 
 @MainActor // swiftlint:disable:next type_body_length
 struct NemsisKitTests {
-    let version: NemsisV3
+    let version: Nemsis
 
     init() throws {
-        version = try NemsisV3(version: versionString)
+        version = try Nemsis(version: versionString)
         let fixturesURL = Bundle.module.url(forResource: "Fixtures/\(versionString)", withExtension: nil)!
         let xsdsURL = fixturesURL.appendingPathComponent("xsds")
         let xsdURLs = try FileManager.default.contentsOfDirectory(at: xsdsURL, includingPropertiesForKeys: nil)
@@ -50,13 +50,13 @@ struct NemsisKitTests {
 
     @Test
     func testTraversePCR() async throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         try pcr.traverse()
     }
 
     @Test
     func testInsertIntoPCR() async throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         #expect(node02.nextSibling == node03)
@@ -72,7 +72,7 @@ struct NemsisKitTests {
 
     @Test
     func testRemoveFromPCR() async throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         print(try pcr.xmlString())
@@ -88,7 +88,7 @@ struct NemsisKitTests {
 
     @Test
     func testNemsisValues() throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         print(try pcr.xmlString())
         let values = try pcr.nemsisValues(at: "/PatientCareReport/ePatient/ePatient.07")
         #expect(values.count == 1)
@@ -98,7 +98,7 @@ struct NemsisKitTests {
 
     @Test
     func testSetNemsisValues() throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         try pcr.setNemsisValues([
             NemsisValue(value: "2514001"),
             NemsisValue(value: "2514003")
@@ -117,14 +117,14 @@ struct NemsisKitTests {
     @Test
     func testPCRFromURL() async throws {
         let xmlURL = Bundle.module.url(forResource: "Fixtures/\(versionString)/2026-EMS-FailXsd", withExtension: "xml")!
-        let pcr = try PatientCareReportV3(version: version, url: xmlURL)
+        let pcr = try PatientCareReport(version: version, url: xmlURL)
         let errors = try await version.validate(pcr: pcr)
         print(errors)
     }
 
     @Test
     func testValidation() async throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         let errors = try await version.validate(pcr: pcr)
         print(errors)
     }
@@ -132,7 +132,7 @@ struct NemsisKitTests {
     @Test
     // swiftlint:disable:next function_body_length
     func testNewPCR() throws {
-        let pcr = try PatientCareReportV3(version: version)
+        let pcr = try PatientCareReport(version: version)
         let xml = try pcr.xmlString()
         #expect(xml.contains("""
     <eRecord>

@@ -51,15 +51,15 @@ func getTargetAndIndex(for xpath: String) -> (target: String, index: Int?) {
 }
 
 @MainActor
-public class PatientCareReportV3: NemsisXmlV3 {
+public class PatientCareReport: NemsisXml {
     public private(set) var id: UUID!
 
-    override public init(version: NemsisV3) throws {
+    override public init(version: Nemsis) throws {
         id = UUID()
         try super.init(version: version)
     }
 
-    override public init(version: NemsisV3, url fileURL: URL) throws {
+    override public init(version: Nemsis, url fileURL: URL) throws {
         try super.init(version: version, url: fileURL)
         if let uuid = UUID(uuidString: doc.documentElement?[attribute: "UUID"] ?? "") {
             id = uuid
@@ -68,7 +68,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
         }
     }
 
-    override public init(clone: PatientCareReportV3) throws {
+    override public init(clone: PatientCareReport) throws {
         try super.init(clone: clone)
         id = clone.id
     }
@@ -138,7 +138,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
         var nextTarget = String(target.removeFirst())
         var nextIndex: Int?
         if nextTarget != "PatientCareReport" {
-            throw NemsisV3Error.unexpected
+            throw NemsisError.unexpected
         }
         nextTarget = String(target.removeFirst())
         (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
@@ -209,7 +209,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
         if let node = node {
             return node
         }
-        throw NemsisV3Error.unexpected
+        throw NemsisError.unexpected
     }
 
     // swiftlint:disable:next cyclomatic_complexity function_body_length
@@ -218,7 +218,7 @@ public class PatientCareReportV3: NemsisXmlV3 {
         var nextTarget = String(target.removeFirst())
         var nextIndex: Int?
         if nextTarget != "PatientCareReport" {
-            throw NemsisV3Error.unexpected
+            throw NemsisError.unexpected
         }
         nextTarget = String(target.removeFirst())
         (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
