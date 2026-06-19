@@ -89,11 +89,23 @@ struct NemsisKitTests {
     @Test
     func testNemsisValues() throws {
         let pcr = try PatientCareReport(version: version)
-        print(try pcr.xmlString())
         let values = try pcr.nemsisValues(at: "/PatientCareReport/ePatient/ePatient.07")
         #expect(values.count == 1)
         #expect(values[0].isNil)
         #expect(values[0].negative == .notRecorded)
+        #expect(values[0].displayText == "Not Recorded")
+
+        var dateValue: NemsisValue? = NemsisValue(value: try Date("2026-06-19T15:06:00-07:00", strategy: .iso8601))
+        try pcr.setNemsisValues([dateValue!], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        dateValue = (try pcr.nemsisValues(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")).first
+        #expect(dateValue?.displayText == "Jun 19, 2026 at 3:06 PM")
+
+        try pcr.setNemsisValues([NemsisValue(value: "2514003"),
+                                 NemsisValue(value: "2514011")],
+                                at: "/PatientCareReport/ePatient/ePatient.14")
+        let enumValues = try pcr.nemsisValues(at: "/PatientCareReport/ePatient/ePatient.14")
+        #expect(enumValues[0].displayText == "Asian")
+        #expect(enumValues[1].displayText == "White")
     }
 
     @Test

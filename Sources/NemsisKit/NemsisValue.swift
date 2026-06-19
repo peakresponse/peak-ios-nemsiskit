@@ -60,6 +60,7 @@ public class NemsisValue: NSObject {
             isNil = text == nil
         }
     }
+    @objc public var displayText: String?
     @objc public var attributes: [String: String]?
 
     @objc public var isNil: Bool {

@@ -271,7 +271,24 @@ public class PatientCareReport: NemsisXml {
 
     override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
         let nodes = try nodes(at: xpath)
-        return nodes.map { NemsisValue(node: $0) }
+        var values: [NemsisValue] = []
+        if nodes.count > 0, let node = nodes.first {
+            let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: node.name)
+            for node in nodes {
+                let value = NemsisValue(node: node)
+                if value.isNil, let negative = negatives?.first(where: { $0.1 == value.negativeValue }) {
+                    value.displayText = negative.0
+                } else if let text = value.text, !text.isEmpty {
+                    if let enumeration {
+                        value.displayText = enumeration.first(where: { $0.1 == text })?.0
+                    } else if baseType == "xs:dateTime", let date = try? Date(text, strategy: .iso8601) {
+                        value.displayText = date.formatted(date: .abbreviated, time: .shortened)
+                    }
+                }
+                values.append(value)
+            }
+        }
+        return values
     }
 
     override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {

@@ -46,6 +46,7 @@ public class Nemsis {
 
     var xsds: [String: Document] = [:]
     var types: [String: [String: Node]] = [:]
+    var elements: [String: [String: Node]] = [:]
 
     let schematronValidator: SchematronValidator
     public var webView: WKWebView {
@@ -98,23 +99,34 @@ public class Nemsis {
         }
         let doc = try Document(url: xsdsDirectoryURL.appendingPathComponent(emsDataSetFilename))
         xsds[emsDataSetFilename] = doc
-        // also process all includes into types cache
+        // also process all includes into types and elements caches
         types[emsDataSetFilename] = [:]
+        elements[emsDataSetFilename] = [:]
         let query = try XPathQuery("/xs:schema/xs:include")
         let results = query.nodesResult(with: doc.node)
         func cacheTypes(from node: Node, xpath: String) throws {
             let query = try XPathQuery(xpath)
-            let typeResults = query.nodesResult(with: node)
-            for typeResult in typeResults {
-                guard let typeNode = typeResult.node, let typeName = typeNode[attribute: "name"] else { continue }
-                types[emsDataSetFilename]?[typeName] = typeNode
+            let results = query.nodesResult(with: node)
+            for result in results {
+                guard let node = result.node, let name = node[attribute: "name"] else { continue }
+                types[emsDataSetFilename]?[name] = node
             }
         }
+        func cacheElements(from node: Node) throws {
+            let query = try XPathQuery("//xs:element[@name]")
+            let results = query.nodesResult(with: node)
+            for result in results {
+                guard let node = result.node, let name = node[attribute: "name"] else { continue }
+                elements[emsDataSetFilename]?[name] = node
+            }
+        }
+        try cacheElements(from: doc.node)
         for result in results {
             guard let node = result.node, let schemaLocation = node[attribute: "schemaLocation"] else { continue }
-            let typeDoc = try xsd(schemaLocation)
-            try cacheTypes(from: typeDoc.node, xpath: "/xs:schema/xs:simpleType[@name]")
-            try cacheTypes(from: typeDoc.node, xpath: "/xs:schema/xs:complexType[@name]")
+            let doc = try xsd(schemaLocation)
+            try cacheTypes(from: doc.node, xpath: "/xs:schema/xs:simpleType[@name]")
+            try cacheTypes(from: doc.node, xpath: "/xs:schema/xs:complexType[@name]")
+            try cacheElements(from: doc.node)
         }
         return doc
     }
@@ -125,11 +137,30 @@ public class Nemsis {
         return query.firstNodeResult(with: doc.node)?.node
     }
 
+    public func emsElement(named: String) -> Node? {
+        return elements[emsDataSetFilename]?[named]
+    }
+
     public func emsElementTypeInfo(in filename: String, // swiftlint:disable:next large_tuple
                                    xpath: String) throws -> (baseType: String?,
                                                              enumeration: [(String, String)]?,
                                                              negatives: [(String, String)]?) {
         guard let elementNode = try emsElement(in: filename, xpath: xpath) else { throw NemsisError.unexpected }
+        return try emsElementTypeInfo(elementNode: elementNode)
+    }
+
+    // swiftlint:disable:next large_tuple
+    public func emsElementTypeInfo(named: String) throws -> (baseType: String?,
+                                                             enumeration: [(String, String)]?,
+                                                             negatives: [(String, String)]?) {
+        guard let elementNode = emsElement(named: named) else { throw NemsisError.unexpected }
+        return try emsElementTypeInfo(elementNode: elementNode)
+    }
+
+    // swiftlint:disable:next large_tuple
+    public func emsElementTypeInfo(elementNode: Node) throws -> (baseType: String?,
+                                                                 enumeration: [(String, String)]?,
+                                                                 negatives: [(String, String)]?) {
         var typeName = elementNode[attribute: "type"]
         var query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
         let typeExtNode = query.firstNodeResult(with: elementNode)?.node
