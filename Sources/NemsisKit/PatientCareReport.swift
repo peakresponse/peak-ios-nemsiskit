@@ -251,12 +251,14 @@ public class PatientCareReport: NemsisXml {
                     }
                     return nil
                 }
+                var node: Node?
+                if let nextIndex, nextIndex < (nodes?.count ?? 0) {
+                    node = nodes?[nextIndex]
+                }
+                node = nodes?.last
                 nextTarget = String(target.removeFirst())
                 (nextTarget, nextIndex) = getTargetAndIndex(for: nextTarget)
-                if let nextIndex, nextIndex < (nodes?.count ?? 0) {
-                    return nodes?[nextIndex]
-                }
-                return nodes?.first
+                return node
             }
             return nil
         }, after: { (parentNode, name, schemaNode) in

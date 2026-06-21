@@ -68,6 +68,25 @@ struct NemsisKitTests {
         let newVitals = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
         #expect(!newVitals.elements.isEmpty)
         print(try pcr.xmlString())
+
+        try pcr.setNemsisValues([NemsisValue(value: try Date("2026-06-19T15:06:00-07:00", strategy: .iso8601))],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        try pcr.setNemsisValues([NemsisValue(value: "3326001")],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
+
+        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
+        try pcr.setNemsisValues([NemsisValue(value: try Date("2026-06-20T15:06:00-07:00", strategy: .iso8601))],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.01")
+        try pcr.setNemsisValues([NemsisValue(value: "3326003")],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.26")
+        var query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "2026-06-19T15:06:00-07:00")
+        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
+        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "3326001")
+        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.01")
+        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "2026-06-20T15:06:00-07:00")
+        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.26")
+        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "3326003")
     }
 
     @Test
