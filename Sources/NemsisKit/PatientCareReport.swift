@@ -294,9 +294,13 @@ public class PatientCareReport: NemsisXml {
     }
 
     override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
+        var isNotRecorded = false
+        if values.count == 1, let value = values.first, value.isNil && value.negative == .notRecorded {
+            isNotRecorded = true
+        }
         // first remove existing nodes or set null with negative, per schema
-        try removeNodes(at: xpath, insertNV: false)
-        if values.count > 0 {
+        try removeNodes(at: xpath, insertNV: isNotRecorded)
+        if !isNotRecorded, values.count > 0 {
             var node = try firstNode(at: xpath)
             for value in values {
                 if node == nil {
