@@ -37,6 +37,14 @@ struct NemsisKitTests {
                 try FileManager.default.copyItem(at: schURL, to: destURL)
             }
         }
+        let customURL = fixturesURL.appendingPathComponent("custom")
+        let customURLs = try FileManager.default.contentsOfDirectory(at: customURL, includingPropertiesForKeys: nil)
+        for customURL in customURLs {
+            let destURL = version.customDirectoryURL.appendingPathComponent(customURL.lastPathComponent)
+            if !FileManager.default.fileExists(atPath: destURL.path) {
+                try FileManager.default.copyItem(at: customURL, to: destURL)
+            }
+        }
     }
 
     @Test
@@ -46,6 +54,15 @@ struct NemsisKitTests {
         #expect(v350 < v350cp5)
         let v350cp6 = Version(nemsisVersion: "3.5.0.251001CP6")!
         #expect(v350cp6 > v350cp5)
+    }
+
+    @Test
+    func testNemsisCustomElements() throws {
+        _ = try version.emsDataSetXsd()
+        #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
+        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 2)
+        #expect(version.appCustomElements[emsDataSetFilename] != nil)
+        #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
     }
 
     @Test

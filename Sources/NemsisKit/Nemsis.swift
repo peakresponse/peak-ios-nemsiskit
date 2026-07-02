@@ -15,6 +15,8 @@ public enum NemsisError: Error {
 }
 
 let emsDataSetFilename = "EMSDataSet_v3.xsd"
+let agencyCustomElementsFilename = "agency.xml"
+let appCustomElementsFilename = "app.xml"
 
 func enumTuples(for typeNode: Node) throws -> [(String, String)]? {
     var query = try XPathQuery("./xs:restriction/xs:enumeration")
@@ -39,14 +41,25 @@ public class Nemsis {
     public let versionDirectoryURL: URL
     public let xsdsDirectoryURL: URL
     public let schsDirectoryURL: URL
+    public let customDirectoryURL: URL
 
     public var emsDataSetXsdURL: URL {
-        return xsdsDirectoryURL.appendingPathComponent("EMSDataSet_v3.xsd")
+        return xsdsDirectoryURL.appendingPathComponent(emsDataSetFilename)
     }
 
-    var xsds: [String: Document] = [:]
+    public var agencyCustomElementsURL: URL {
+        return customDirectoryURL.appendingPathComponent(agencyCustomElementsFilename)
+    }
+
+    public var appCustomElementsURL: URL {
+        return customDirectoryURL.appendingPathComponent(appCustomElementsFilename)
+    }
+
+    var docs: [String: Document] = [:]
     var types: [String: [String: Node]] = [:]
     var elements: [String: [String: Node]] = [:]
+    var agencyCustomElements: [String: [String: Node]] = [:]
+    var appCustomElements: [String: [String: Node]] = [:]
 
     let schematronValidator: SchematronValidator
     public var webView: WKWebView {
@@ -65,6 +78,8 @@ public class Nemsis {
         try FileManager.default.createDirectory(at: xsdsDirectoryURL, withIntermediateDirectories: true)
         schsDirectoryURL = versionDirectoryURL.appendingPathComponent("schs")
         try FileManager.default.createDirectory(at: schsDirectoryURL, withIntermediateDirectories: true)
+        customDirectoryURL = versionDirectoryURL.appendingPathComponent("custom")
+        try FileManager.default.createDirectory(at: customDirectoryURL, withIntermediateDirectories: true)
 
         let saxonURL = Bundle.module.url(forResource: "SaxonJS", withExtension: nil)!
         let saxonURLs = try FileManager.default.contentsOfDirectory(at: saxonURL, includingPropertiesForKeys: nil)
@@ -85,20 +100,20 @@ public class Nemsis {
     }
 
     public func xsd(_ filename: String) throws -> Document {
-        if let doc = xsds[filename] {
+        if let doc = docs[filename] {
             return doc
         }
         let doc = try Document(url: xsdsDirectoryURL.appendingPathComponent(filename))
-        xsds[filename] = doc
+        docs[filename] = doc
         return doc
     }
 
     public func emsDataSetXsd() throws -> Document {
-        if let doc = xsds[emsDataSetFilename] {
+        if let doc = docs[emsDataSetFilename] {
             return doc
         }
-        let doc = try Document(url: xsdsDirectoryURL.appendingPathComponent(emsDataSetFilename))
-        xsds[emsDataSetFilename] = doc
+        let doc = try Document(url: emsDataSetXsdURL)
+        docs[emsDataSetFilename] = doc
         // also process all includes into types and elements caches
         types[emsDataSetFilename] = [:]
         elements[emsDataSetFilename] = [:]
@@ -127,6 +142,29 @@ public class Nemsis {
             try cacheTypes(from: doc.node, xpath: "/xs:schema/xs:simpleType[@name]")
             try cacheTypes(from: doc.node, xpath: "/xs:schema/xs:complexType[@name]")
             try cacheElements(from: doc.node)
+        }
+        // look for any agency and/or app custom elements
+        if FileManager.default.fileExists(atPath: agencyCustomElementsURL.path) {
+            let doc = try Document(url: agencyCustomElementsURL)
+            docs[agencyCustomElementsFilename]  = doc
+            let query = try XPathQuery("/StateDataSet/seCustomConfiguration/seCustomConfiguration.CustomGroup")
+            let results = query.nodesResult(with: doc.node)
+            agencyCustomElements[emsDataSetFilename] = [:]
+            for result in results {
+                guard let node = result.node, let name = node[attribute: "CustomElementID"] else { continue }
+                agencyCustomElements[emsDataSetFilename]?[name] = node
+            }
+        }
+        if FileManager.default.fileExists(atPath: appCustomElementsURL.path) {
+            let doc = try Document(url: appCustomElementsURL)
+            docs[appCustomElementsFilename] = doc
+            let query = try XPathQuery("/StateDataSet/seCustomConfiguration/seCustomConfiguration.CustomGroup")
+            let results = query.nodesResult(with: doc.node)
+            appCustomElements[emsDataSetFilename] = [:]
+            for result in results {
+                guard let node = result.node, let name = node[attribute: "CustomElementID"] else { continue }
+                appCustomElements[emsDataSetFilename]?[name] = node
+            }
         }
         return doc
     }

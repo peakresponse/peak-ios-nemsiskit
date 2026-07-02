@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StateDataSet xmlns="http://www.nemsis.org"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.nemsis.org https://nemsis.org/media/nemsis_v3/3.5.1.251001CP2/XSDs/NEMSIS_XSDs/StateDataSet_v3.xsd" timestamp="2025-10-08T13:04:21-04:00" effectiveDate="2025-11-01T00:00:00-04:00">
+  <sState>
+    <sState.01>00</sState.01>
+  </sState>
+  <seCustomConfiguration>
+    <seCustomConfiguration.CustomGroup CustomElementID="eDisposition.21">
+      <seCustomConfiguration.01 nemsisElement="eDisposition.21">Type of Destination</seCustomConfiguration.01>
+      <seCustomConfiguration.02>The type of destination the patient was delivered or transferred to</seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902009</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923001</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903007</seCustomConfiguration.05>
+      <seCustomConfiguration.06 nemsisCode="4221013" customValueDescription="Alternate Care Site">4221043</seCustomConfiguration.06>
+    </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="eHistory.904">
+      <seCustomConfiguration.01 nemsisElement="eHistory">Recent International Travel</seCustomConfiguration.01>
+      <seCustomConfiguration.02>Document all the countries (outside the US) the patient has traveled to prior to symptom onset. The time frame "prior to symptom onset" is defined by state or local jurisdictions. Use NEMSIS data type ANSICountryCode.</seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902007</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923003</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903007</seCustomConfiguration.05>
+      <seCustomConfiguration.08>8801019</seCustomConfiguration.08>
+      <seCustomConfiguration.08>8801021</seCustomConfiguration.08>
+      <seCustomConfiguration.08>8801023</seCustomConfiguration.08>
+    </seCustomConfiguration.CustomGroup>
+  </seCustomConfiguration>
+  <sSoftware>
+    <sSoftware.SoftwareGroup>
+      <sSoftware.01>Peak Response Inc.</sSoftware.01>
+      <sSoftware.02 xsi:nil="true" NV="7701001" />
+      <sSoftware.03 xsi:nil="true" NV="7701001" />
+    </sSoftware.SoftwareGroup>
+  </sSoftware>
+  <sElement>
+    <sElement.01 xsi:nil="true" NV="7701001" />
+  </sElement>
+  <sConfiguration>
+    <sConfiguration.01 xsi:nil="true" NV="7701001" />
+    <sConfiguration.ProcedureGroup>
+      <sConfiguration.02 xsi:nil="true" NV="7701001" />
+      <sConfiguration.03 xsi:nil="true" NV="7701001" />
+    </sConfiguration.ProcedureGroup>
+    <sConfiguration.MedicationGroup>
+      <sConfiguration.04 xsi:nil="true" NV="7701001" />
+      <sConfiguration.05 xsi:nil="true" NV="7701001" />
+    </sConfiguration.MedicationGroup>
+    <sConfiguration.06 xsi:nil="true" NV="7701001" />
+  </sConfiguration>
+</StateDataSet>
