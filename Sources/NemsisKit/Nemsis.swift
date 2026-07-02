@@ -18,11 +18,11 @@ let emsDataSetFilename = "EMSDataSet_v3.xsd"
 let agencyCustomElementsFilename = "agency.xml"
 let appCustomElementsFilename = "app.xml"
 
-func enumTuples(for typeNode: Node) throws -> [(String, String)]? {
+func enumTuples(for typeNode: Node) throws -> [(label: String, value: String)]? {
     var query = try XPathQuery("./xs:restriction/xs:enumeration")
     let results = query.nodesResult(with: typeNode)
     if results.count > 0 {
-        var enumeration: [(String, String)] = []
+        var enumeration: [(label: String, value: String)] = []
         query = try XPathQuery("./xs:annotation/xs:documentation")
         for result in results {
             guard let resultNode = result.node,
@@ -30,6 +30,7 @@ func enumTuples(for typeNode: Node) throws -> [(String, String)]? {
                   let label = query.firstNodeResult(with: resultNode)?.node?.textContent else { continue }
             enumeration.append((label, value))
         }
+        enumeration.sort(by: { $0.label < $1.label })
         return enumeration
     }
     return nil
@@ -181,8 +182,8 @@ public class Nemsis {
 
     // swiftlint:disable:next large_tuple
     public func emsElementTypeInfo(named: String) throws -> (baseType: String?,
-                                                             enumeration: [(String, String)]?,
-                                                             negatives: [(String, String)]?) {
+                                                             enumeration: [(label: String, value: String)]?,
+                                                             negatives: [(label: String, value: String)]?) {
         guard let elementNode = emsElement(named: named) else { throw NemsisError.unexpected }
         var typeName = elementNode[attribute: "type"]
         var query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
@@ -197,7 +198,18 @@ public class Nemsis {
             throw NemsisError.unexpected
         }
 
-        let enumeration = try enumTuples(for: typeNode)
+        var enumeration = try enumTuples(for: typeNode)
+        // check for custom element additions
+        if let customElementNode = agencyCustomElements[emsDataSetFilename]?[named] {
+            let query = try XPathQuery("./seCustomConfiguration.06")
+            let results = query.nodesResult(with: customElementNode)
+            for result in results {
+                guard let resultNode = result.node,
+                      let label = resultNode[attribute: "customValueDescription"] else { continue }
+                enumeration?.append((label, resultNode.textContent.trimmingCharacters(in: .whitespacesAndNewlines)))
+            }
+            enumeration?.sort(by: {$0.label < $1.label})
+        }
 
         var negatives: [(String, String)]?
         if let typeExtNode {

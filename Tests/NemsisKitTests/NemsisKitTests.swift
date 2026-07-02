@@ -63,6 +63,11 @@ struct NemsisKitTests {
         #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 2)
         #expect(version.appCustomElements[emsDataSetFilename] != nil)
         #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
+
+        let (_, enumeration, _) = try version.emsElementTypeInfo(named: "eDisposition.21")
+        #expect(enumeration?.count == 21)
+        #expect(enumeration?[0].label == "Alternate Care Site")
+        #expect(enumeration?[0].value == "4221043")
     }
 
     @Test
