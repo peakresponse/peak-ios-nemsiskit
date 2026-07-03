@@ -276,9 +276,10 @@ public class PatientCareReport: NemsisXml {
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)
         var values: [NemsisValue] = []
-        if nodes.count > 0, let node = nodes.first {
+        if nodes.count > 0 {
             let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
-            let customElementNode = version.agencyEmsCustomElement(named: name) ?? version.appEmsCustomElement(named: name)
+            let customElementNode = version.agencyEmsCustomElement(named: name) ??
+                version.appEmsCustomElement(named: name)
             var customElementDescriptions: [String: String]?
             var customResultNodes: [Node]?
             if let customElementNode {

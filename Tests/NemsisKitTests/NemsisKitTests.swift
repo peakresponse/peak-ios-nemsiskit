@@ -161,10 +161,17 @@ struct NemsisKitTests {
         #expect(version.appCustomElements[emsDataSetFilename] != nil)
         #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
 
-        let (_, enumeration, _) = try version.emsElementTypeInfo(named: "eDisposition.21")
+        var (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: "eDisposition.21")
         #expect(enumeration?.count == 21)
         #expect(enumeration?[0].label == "Alternate Care Site")
         #expect(enumeration?[0].value == "4221043")
+
+        (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: "eHistory.904")
+        #expect(baseType == "other")
+        #expect(enumeration == nil)
+        #expect(negatives?.count == 3)
+        #expect(negatives?[0].label == "Refused")
+        #expect(negatives?[0].value == "8801019")
 
         let pcr = try PatientCareReport(version: version)
         try pcr.setNemsisValues([

@@ -188,11 +188,74 @@ public class Nemsis {
         return appCustomElements[emsDataSetFilename]?[named]
     }
 
-    // swiftlint:disable:next large_tuple
+    // swiftlint:disable:next large_tuple function_body_length cyclomatic_complexity
     public func emsElementTypeInfo(named: String) throws -> (baseType: String?,
                                                              enumeration: [(label: String, value: String)]?,
                                                              negatives: [(label: String, value: String)]?) {
-        guard let elementNode = emsElement(named: named) else { throw NemsisError.unexpected }
+        let elementNode = emsElement(named: named)
+        if elementNode == nil {
+            if let customElementNode = agencyEmsCustomElement(named: named) ?? appEmsCustomElement(named: named) {
+                let dataType = customElementNode[element: "seCustomConfiguration.03"]?.textContent
+                let baseType = switch dataType {
+                case "9902001": "xs:base64Binary"
+                case "9902003": "xs:dateTime"
+                case "9902005": "xs:decimal"
+                case "9902009": "xs:string"
+                case "9902011": "xs:boolean"
+                default: "other"
+                }
+                var enumeration: [(label: String, value: String)]?
+                let enumerationNodes = customElementNode[elements: "seCustomConfiguration.06"]
+                if enumerationNodes.count > 0 {
+                    enumeration = []
+                    for node in enumerationNodes {
+                        enumeration?.append((node[attribute: "customValueDescription"] ?? "", node.textContent))
+                    }
+                }
+                enumeration?.sort(by: { $0.label < $1.label })
+                var negatives: [(label: String, value: String)]?
+                let notValueNodes = customElementNode[elements: "seCustomConfiguration.07"]
+                if notValueNodes.count > 0 {
+                    var notValues: [String: String] = [:]
+                    if let notValueTypeNode = emsType(named: "NV") {
+                        let query = try XPathQuery("./xs:restriction/xs:enumeration")
+                        let notValueNodes = query.nodesResult(with: notValueTypeNode).compactMap(\.node)
+                        for notValueNode in notValueNodes {
+                            notValues[notValueNode[attribute: "value"] ?? ""] =
+                                notValueNode[element: "xs:annotation"]?[element: "xs:documentation"]?.textContent ?? ""
+                        }
+                    }
+                    negatives = []
+                    for node in notValueNodes {
+                        negatives?.append((notValues[node.textContent] ?? "", node.textContent))
+                    }
+                }
+                let pertinentNegativeNodes = customElementNode[elements: "seCustomConfiguration.08"]
+                if pertinentNegativeNodes.count > 0 {
+                    if negatives == nil {
+                        negatives = []
+                    }
+                    var pertinentNegatives: [String: String] = [:]
+                    if let pertinentNegativeTypeNode = emsType(named: "PN") {
+                        let query = try XPathQuery("./xs:restriction/xs:enumeration")
+                        let pertinentNegativeNodes = query.nodesResult(with: pertinentNegativeTypeNode)
+                            .compactMap(\.node)
+                        for pertinentNegativeNode in pertinentNegativeNodes {
+                            pertinentNegatives[pertinentNegativeNode[attribute: "value"] ?? ""] =
+                                pertinentNegativeNode[element: "xs:annotation"]?[element: "xs:documentation"]?
+                                .textContent
+                        }
+                    }
+                    for node in pertinentNegativeNodes {
+                        negatives?.append((pertinentNegatives[node.textContent] ?? "", node.textContent))
+                    }
+                }
+                negatives?.sort(by: { $0.label < $1.label })
+                return (baseType, enumeration, negatives)
+            }
+            throw NemsisError.unexpected
+        }
+        guard let elementNode = elementNode else { throw NemsisError.unexpected }
         var typeName = elementNode[attribute: "type"]
         var query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension")
         let typeExtNode = query.firstNodeResult(with: elementNode)?.node
