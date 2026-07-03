@@ -57,20 +57,6 @@ struct NemsisKitTests {
     }
 
     @Test
-    func testNemsisCustomElements() throws {
-        _ = try version.emsDataSetXsd()
-        #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
-        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 2)
-        #expect(version.appCustomElements[emsDataSetFilename] != nil)
-        #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
-
-        let (_, enumeration, _) = try version.emsElementTypeInfo(named: "eDisposition.21")
-        #expect(enumeration?.count == 21)
-        #expect(enumeration?[0].label == "Alternate Care Site")
-        #expect(enumeration?[0].value == "4221043")
-    }
-
-    @Test
     func testTraversePCR() async throws {
         let pcr = try PatientCareReport(version: version)
         try pcr.traverse()
@@ -165,6 +151,35 @@ struct NemsisKitTests {
         let eVitals26node = query.firstNodeResult(with: pcr.doc.node)?.node
         #expect(eVitals26node?.textContent == "3326001")
         #expect(eVitals26node?.previousSibling?.name == "eVitals.GlasgowScoreGroup")
+    }
+
+    @Test
+    func testNemsisCustomElements() throws {
+        _ = try version.emsDataSetXsd()
+        #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
+        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 2)
+        #expect(version.appCustomElements[emsDataSetFilename] != nil)
+        #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
+
+        let (_, enumeration, _) = try version.emsElementTypeInfo(named: "eDisposition.21")
+        #expect(enumeration?.count == 21)
+        #expect(enumeration?[0].label == "Alternate Care Site")
+        #expect(enumeration?[0].value == "4221043")
+
+        let pcr = try PatientCareReport(version: version)
+        try pcr.setNemsisValues([
+            NemsisValue(value: "4221043")
+        ], at: "/PatientCareReport/eDisposition/eDisposition.21")
+        var query = try XPathQuery("/PatientCareReport/eDisposition/eDisposition.21")
+        var node = query.firstNodeResult(with: pcr.doc.node)?.node
+        #expect(node?.textContent == "4221013")
+
+        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                               "eCustomResults.02[text()=\"eDisposition.21\"]")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node
+        #expect(node?.textContent == "eDisposition.21")
+        #expect(node?.previousSibling?.textContent == "4221043")
+        print(try pcr.xmlString())
     }
 
     @Test

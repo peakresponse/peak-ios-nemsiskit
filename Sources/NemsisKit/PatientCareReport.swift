@@ -294,19 +294,63 @@ public class PatientCareReport: NemsisXml {
     }
 
     override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
+        guard let last = xpath.split(separator: "/").last else { return }
+        let name = String(last)
+        // get valid enumeration/negatives, if any TODO validation check?
+//        let (_, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
+        // check for a custom element definition
+        let customElementNode = version.agencyEmsCustomElement(named: name) ?? version.appEmsCustomElement(named: name)
+        var customElementValues: [String: String]?
+        if let customElementNode {
+            // gather any custom value mappings
+            let query = try XPathQuery("./seCustomConfiguration.06")
+            let results = query.nodesResult(with: customElementNode)
+            customElementValues = [:]
+            for result in results {
+                guard let resultNode = result.node,
+                      let nemsisValue = resultNode[attribute: "nemsisCode"] else { continue }
+                customElementValues?[resultNode.textContent] = nemsisValue
+            }
+        }
+        // check if we're just setting Not Recorded, which can be handled by the remove
         var isNotRecorded = false
         if values.count == 1, let value = values.first, value.isNil && value.negative == .notRecorded {
             isNotRecorded = true
         }
         // first remove existing nodes or set null with negative, per schema
         try removeNodes(at: xpath, insertNV: isNotRecorded)
+        if customElementNode != nil {
+            // remove custom results for this element
+            var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                  "eCustomResults.02[text()=\"\(name)\"]")
+            nodes = nodes.map { $0.parentElement! }
+            if let parent = nodes.first?.parentElement {
+                for node in nodes {
+                    parent.removeChild(node)
+                }
+            }
+        }
         if !isNotRecorded, values.count > 0 {
             var node = try firstNode(at: xpath)
             for value in values {
                 if node == nil {
                     node = try insertNode(at: xpath)
                 }
-                node?.textContent = value.text ?? ""
+                let text = value.text ?? ""
+                if let nemsisValue = customElementValues?[text] {
+                    node?.textContent = nemsisValue
+                    // insert custom results
+                    var node = try firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                             "eCustomResults.02[text()=\"\(name)\"]")
+                    if node == nil {
+                        node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                        node?[element: "eCustomResults.01"]?.textContent = text
+                        node?[element: "eCustomResults.02"]?.textContent = name
+                        node = node?[element: "eCustomResults.01"]
+                    }
+                } else {
+                    node?.textContent = text
+                }
                 node?.removeAllAttributes()
                 if let attributes = value.attributes {
                     for (key, value) in attributes {

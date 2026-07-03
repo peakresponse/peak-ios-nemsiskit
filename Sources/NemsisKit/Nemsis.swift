@@ -180,6 +180,14 @@ public class Nemsis {
         return elements[emsDataSetFilename]?[named]
     }
 
+    public func agencyEmsCustomElement(named: String) -> Node? {
+        return agencyCustomElements[emsDataSetFilename]?[named]
+    }
+
+    public func appEmsCustomElement(named: String) -> Node? {
+        return appCustomElements[emsDataSetFilename]?[named]
+    }
+
     // swiftlint:disable:next large_tuple
     public func emsElementTypeInfo(named: String) throws -> (baseType: String?,
                                                              enumeration: [(label: String, value: String)]?,
