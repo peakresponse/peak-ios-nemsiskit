@@ -273,9 +273,28 @@ public class PatientCareReport: NemsisXml {
 
     override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
         let nodes = try nodes(at: xpath)
+        guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
+        let name = String(last)
         var values: [NemsisValue] = []
         if nodes.count > 0, let node = nodes.first {
-            let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: node.name)
+            let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
+            let customElementNode = version.agencyEmsCustomElement(named: name) ?? version.appEmsCustomElement(named: name)
+            var customElementDescriptions: [String: String]?
+            var customResultNodes: [Node]?
+            if let customElementNode {
+                customResultNodes = try self.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                                   "eCustomResults.02[text()=\"\(name)\"]")
+                customResultNodes = customResultNodes?.map { $0.parentElement! }
+
+                let query = try XPathQuery("./seCustomConfiguration.06")
+                let results = query.nodesResult(with: customElementNode)
+                customElementDescriptions = [:]
+                for result in results {
+                    guard let resultNode = result.node,
+                          let description = resultNode[attribute: "customValueDescription"] else { continue }
+                    customElementDescriptions?[resultNode.textContent] = description
+                }
+            }
             for node in nodes {
                 let value = NemsisValue(node: node)
                 if value.isNil, let negative = negatives?.first(where: { $0.1 == value.negativeValue }) {
@@ -283,6 +302,10 @@ public class PatientCareReport: NemsisXml {
                 } else if let text = value.text, !text.isEmpty {
                     if let enumeration {
                         value.displayText = enumeration.first(where: { $0.1 == text })?.0
+                        if let customResultNodes, let customResultNode = customResultNodes.first {
+                            value.text = customResultNode[element: "eCustomResults.01"]?.textContent
+                            value.displayText = customElementDescriptions?[value.text ?? ""]
+                        }
                     } else if baseType == "xs:dateTime", let date = try? Date(text, strategy: .iso8601) {
                         value.displayText = date.formatted(date: .abbreviated, time: .shortened)
                     }

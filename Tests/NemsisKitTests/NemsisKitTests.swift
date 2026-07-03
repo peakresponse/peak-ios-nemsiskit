@@ -179,6 +179,12 @@ struct NemsisKitTests {
         node = query.firstNodeResult(with: pcr.doc.node)?.node
         #expect(node?.textContent == "eDisposition.21")
         #expect(node?.previousSibling?.textContent == "4221043")
+
+        let values = try pcr.nemsisValues(at: "/PatientCareReport/eDisposition/eDisposition.21")
+        #expect(values.count == 1)
+        #expect(values[0].text == "4221043")
+        #expect(values[0].displayText == "Alternate Care Site")
+
         print(try pcr.xmlString())
     }
 
