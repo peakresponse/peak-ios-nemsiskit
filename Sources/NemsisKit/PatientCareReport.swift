@@ -287,12 +287,10 @@ public class PatientCareReport: NemsisXml {
                                                    "eCustomResults.02[text()=\"\(name)\"]")
                 customResultNodes = customResultNodes?.map { $0.parentElement! }
 
-                let query = try XPathQuery("./seCustomConfiguration.06")
-                let results = query.nodesResult(with: customElementNode)
+                let results = customElementNode[elements: "seCustomConfiguration.06"]
                 customElementDescriptions = [:]
-                for result in results {
-                    guard let resultNode = result.node,
-                          let description = resultNode[attribute: "customValueDescription"] else { continue }
+                for resultNode in results {
+                    guard let description = resultNode[attribute: "customValueDescription"] else { continue }
                     customElementDescriptions?[resultNode.textContent] = description
                 }
             }
@@ -327,12 +325,10 @@ public class PatientCareReport: NemsisXml {
         var customElementValues: [String: String]?
         if let customElementNode {
             // gather any custom value mappings
-            let query = try XPathQuery("./seCustomConfiguration.06")
-            let results = query.nodesResult(with: customElementNode)
+            let results = customElementNode[elements: "seCustomConfiguration.06"]
             customElementValues = [:]
-            for result in results {
-                guard let resultNode = result.node,
-                      let nemsisValue = resultNode[attribute: "nemsisCode"] else { continue }
+            for resultNode in results {
+                guard let nemsisValue = resultNode[attribute: "nemsisCode"] else { continue }
                 customElementValues?[resultNode.textContent] = nemsisValue
             }
         }

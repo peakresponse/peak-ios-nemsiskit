@@ -272,11 +272,9 @@ public class Nemsis {
         var enumeration = try enumTuples(for: typeNode)
         // check for custom element additions
         if let customElementNode = agencyCustomElements[emsDataSetFilename]?[named] {
-            let query = try XPathQuery("./seCustomConfiguration.06")
-            let results = query.nodesResult(with: customElementNode)
-            for result in results {
-                guard let resultNode = result.node,
-                      let label = resultNode[attribute: "customValueDescription"] else { continue }
+            let results = customElementNode[elements: "seCustomConfiguration.06"]
+            for resultNode in results {
+                guard let label = resultNode[attribute: "customValueDescription"] else { continue }
                 enumeration?.append((label, resultNode.textContent.trimmingCharacters(in: .whitespacesAndNewlines)))
             }
             enumeration?.sort(by: {$0.label < $1.label})
