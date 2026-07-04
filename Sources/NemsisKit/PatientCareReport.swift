@@ -50,7 +50,7 @@ func getTargetAndIndex(for xpath: String) -> (target: String, index: Int?) {
     return (target, index)
 }
 
-@MainActor
+@MainActor // swiftlint:disable:next type_body_length
 public class PatientCareReport: NemsisXml {
     public private(set) var id: UUID!
 
@@ -165,8 +165,12 @@ public class PatientCareReport: NemsisXml {
             }
             let nodes = parentNode?[elements: name]
             if name == nextTarget {
-                if let nextIndex, nextIndex < (nodes?.count ?? 0) {
-                    node = nodes?[nextIndex]
+                if let nextIndex {
+                    if nextIndex < (nodes?.count ?? 0) {
+                        node = nodes?[nextIndex]
+                    } else {
+                        throw NemsisError.unexpected
+                    }
                 } else {
                     node = nodes?.last
                 }
@@ -347,6 +351,50 @@ public class PatientCareReport: NemsisXml {
         return values
     }
 
+    func getCorrelationId(for node: Node?, at xpath: String, createIfMissing: Bool = false) throws -> String? {
+        var correlationId: String?
+        // first check if we're attaching to an existing repeating element
+        if let node {
+            // check if node already has a CorrelationID, if so, just return
+            correlationId = node[attribute: "CorrelationID"]
+            if correlationId != nil {
+                return correlationId
+            }
+            // otherwise, check type info to see if allowed
+            if let typeNode = version.emsType(named: node.name) {
+                let query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension/xs:attribute[@name=\"CorrelationId\"]")
+                if query.firstNodeResult(with: typeNode) != nil {
+                    if createIfMissing {
+                        let uuid = UUID().uuidString.lowercased()
+                        node[attribute: "CorrelationID"] = uuid
+                        correlationId = uuid
+                    }
+                    return correlationId
+                }
+            }
+        }
+        // otherwise, check for a repeating ancestor group in the xpath
+        let regex = try NSRegularExpression(pattern: "\\[\\d+\\]")
+        let matches = regex.matches(in: xpath, range: NSRange(location: 0, length: xpath.count))
+        if let match = matches.last {
+            let repeatingGroupXpath = String(xpath[Range(NSRange(location: 0,
+                                                                 length: match.range.location + match.range.length),
+                                                         in: xpath)!])
+            if let correlationIdNode = try firstNode(at: repeatingGroupXpath) {
+                correlationId = correlationIdNode[attribute: "CorrelationID"]
+                if correlationId == nil && createIfMissing {
+                    let uuid = UUID().uuidString.lowercased()
+                    correlationId = uuid
+                    correlationIdNode[attribute: "CorrelationID"] = uuid
+                }
+            } else {
+                throw NemsisError.unexpected
+            }
+        }
+        return correlationId
+    }
+
+    // swiftlint:disable:next cyclomatic_complexity
     override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
         guard let last = xpath.split(separator: "/").last else { return }
         let name = String(last)
@@ -372,7 +420,7 @@ public class PatientCareReport: NemsisXml {
         if !isNotRecorded, values.count > 0 {
             var node = try firstNode(at: xpath)
             for value in values {
-                if node == nil, xpath.hasPrefix("/") {
+                if node == nil {
                     node = try insertNode(at: xpath)
                 }
                 let text = value.text ?? ""
@@ -383,21 +431,49 @@ public class PatientCareReport: NemsisXml {
                 }
                 node?.removeAllAttributes()
                 if customElementNode != nil {
+                    // find/set correlation id for nearest repeating element, if any
+                    let correlationId = try getCorrelationId(for: node, at: xpath, createIfMissing: true)
                     // insert custom results
-                    var node = try firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                                             "eCustomResults.02[text()=\"\(name)\"]")?.parentElement
-                    if node == nil {
-                        node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
-                        node?[element: "eCustomResults.01"]?.textContent = text
-                        node?[element: "eCustomResults.02"]?.textContent = name
-                        node = node?[element: "eCustomResults.01"]
-                    } else {
-                        if let prev = node?[elements: "eCustomResults.01"].last {
-                            node = node?.addElement("eCustomResults.01", at: .after(prev))
-                        } else {
-                            node = node?.addElement("eCustomResults.01", at: .first)
+                    var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                          "eCustomResults.02[text()=\"\(name)\"]")
+                    nodes = nodes.map { $0.parentElement! }
+                    if let correlationId {
+                        var isFound = false
+                        for parentNode in nodes where parentNode[element: "eCustomResults.03"]?.textContent == correlationId {
+                            isFound = true
+                            if let prev = parentNode[elements: "eCustomResults.01"].last {
+                                node = parentNode.addElement("eCustomResults.01", at: .after(prev))
+                            } else {
+                                node = parentNode.addElement("eCustomResults.01", at: .first)
+                            }
+                            break
+                        }
+                        if !isFound {
+                            node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                            node?[element: "eCustomResults.01"]?.textContent = text
+                            node?[element: "eCustomResults.02"]?.textContent = name
+                            let correlationIdNode = node?.addElement("eCustomResults.03", at: .last)
+                            correlationIdNode?.textContent = correlationId
+                            node = node?[element: "eCustomResults.01"]
                         }
                         node?.textContent = text
+                    } else {
+                        if nodes.isEmpty {
+                            node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                            node?[element: "eCustomResults.01"]?.textContent = text
+                            node?[element: "eCustomResults.02"]?.textContent = name
+                            node = node?[element: "eCustomResults.01"]
+                        } else if nodes.count == 1 {
+                            node = nodes.first
+                            if let prev = node?[elements: "eCustomResults.01"].last {
+                                node = node?.addElement("eCustomResults.01", at: .after(prev))
+                            } else {
+                                node = node?.addElement("eCustomResults.01", at: .first)
+                            }
+                            node?.textContent = text
+                        } else {
+                            throw NemsisError.unexpected
+                        }
                     }
                     node?.removeAllAttributes()
                 }

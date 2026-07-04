@@ -23,6 +23,31 @@
       <seCustomConfiguration.08>8801021</seCustomConfiguration.08>
       <seCustomConfiguration.08>8801023</seCustomConfiguration.08>
     </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="eVitals.25">
+      <seCustomConfiguration.01 nemsisElement="eVitals.25">Temperature Method</seCustomConfiguration.01>
+      <seCustomConfiguration.02>The method used to obtain the patient's body temperature.</seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902009</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923001</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903007</seCustomConfiguration.05>
+      <seCustomConfiguration.06 nemsisCode="3325011" customValueDescription="No Touch (e.g., Infrared)">3325019</seCustomConfiguration.06>
+    </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="eVitals.901">
+      <seCustomConfiguration.01 nemsisElement="eVitals.VitalGroup">Richmond Agitation-Sedation Scale (RASS)</seCustomConfiguration.01>
+      <seCustomConfiguration.02>The Richmond Agitation-Sedation Scale (RASS) score measuring the agitation or sedation level of the patient.</seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902005</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923001</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903007</seCustomConfiguration.05>
+      <seCustomConfiguration.06 customValueDescription="+4 Combative">4</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="+3 Very agitated">3</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="+2 Agitated">2</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="+1 Restless">1</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="0 Alert and calm">0</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="-1 Drowsy">-1</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="-2 Light sedation">-2</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="-3 Moderate sedation">-3</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="-4 Deep sedation">-4</seCustomConfiguration.06>
+      <seCustomConfiguration.06 customValueDescription="-5 Unarousable">-5</seCustomConfiguration.06>
+    </seCustomConfiguration.CustomGroup>
   </seCustomConfiguration>
   <sSoftware>
     <sSoftware.SoftwareGroup>

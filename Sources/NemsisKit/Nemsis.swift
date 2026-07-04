@@ -194,7 +194,7 @@ public class Nemsis {
                                                              negatives: [(label: String, value: String)]?) {
         let elementNode = emsElement(named: named)
         if elementNode == nil {
-            if let customElementNode = agencyEmsCustomElement(named: named) ?? appEmsCustomElement(named: named) {
+            if let customElementNode = agencyEmsCustomElement(named: named) {
                 let dataType = customElementNode[element: "seCustomConfiguration.03"]?.textContent
                 let baseType = switch dataType {
                 case "9902001": "xs:base64Binary"

@@ -41,9 +41,10 @@ struct NemsisKitTests {
         let customURLs = try FileManager.default.contentsOfDirectory(at: customURL, includingPropertiesForKeys: nil)
         for customURL in customURLs {
             let destURL = version.customDirectoryURL.appendingPathComponent(customURL.lastPathComponent)
-            if !FileManager.default.fileExists(atPath: destURL.path) {
-                try FileManager.default.copyItem(at: customURL, to: destURL)
+            if FileManager.default.fileExists(atPath: destURL.path) {
+                _ = try? FileManager.default.removeItem(at: destURL)
             }
+            try FileManager.default.copyItem(at: customURL, to: destURL)
         }
     }
 
@@ -157,21 +158,24 @@ struct NemsisKitTests {
     func testNemsisCustomElements() throws {
         _ = try version.emsDataSetXsd()
         #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
-        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 2)
+        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 4)
         #expect(version.appCustomElements[emsDataSetFilename] != nil)
         #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
 
-        var (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: "eDisposition.21")
-        #expect(enumeration?.count == 21)
-        #expect(enumeration?[0].label == "Alternate Care Site")
-        #expect(enumeration?[0].value == "4221043")
-
-        (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: "eHistory.904")
+        var (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: "eHistory.904")
         #expect(baseType == "other")
         #expect(enumeration == nil)
         #expect(negatives?.count == 3)
         #expect(negatives?[0].label == "Refused")
         #expect(negatives?[0].value == "8801019")
+
+        (_, enumeration, _) = try version.emsElementTypeInfo(named: "eDisposition.21")
+        #expect(enumeration?.count == 21)
+        #expect(enumeration?[0].label == "Alternate Care Site")
+        #expect(enumeration?[0].value == "4221043")
+
+        (_, enumeration, _) = try version.emsElementTypeInfo(named: "eVitals.25")
+        #expect(enumeration?.count == 10)
 
         let pcr = try PatientCareReport(version: version)
         try pcr.setNemsisValues([
@@ -208,6 +212,23 @@ struct NemsisKitTests {
         #expect(values.count == 2)
         #expect(values[0].text == "MX")
         #expect(values[1].text == "IT")
+
+        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
+        try pcr.setNemsisValues([
+            NemsisValue(value: "3325019")
+        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node
+        #expect(node?.textContent == "3325011")
+        let correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                               "eCustomResults.02[text()=\"eVitals.25\"]")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        #expect(node != nil)
+        #expect(node?[element: "eCustomResults.01"]?.textContent == "3325019")
+        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
 
         print(try pcr.xmlString())
     }
