@@ -133,7 +133,7 @@ public class PatientCareReport: NemsisXml {
         })
     }
 
-    override public func insertNode(at xpath: String) throws -> Node {
+    override public func insertNode(at xpath: String) throws -> Node? {
         var target = xpath.split(separator: "/")
         var nextTarget = String(target.removeFirst())
         var nextIndex: Int?
@@ -206,19 +206,16 @@ public class PatientCareReport: NemsisXml {
             }
             return false
         })
-        if let node = node {
-            return node
-        }
-        throw NemsisError.unexpected
+        return node
     }
 
     // swiftlint:disable:next cyclomatic_complexity
     override public func removeNodes(at xpath: String, insertNV: Bool = true) throws {
         var target = xpath.split(separator: "/")
-        let name = String(target.last ?? "")
-        if target.count == 1 ||
-            version.agencyEmsCustomElement(named: name) != nil ||
-            version.appEmsCustomElement(named: name) != nil {
+        guard let last = target.last else { throw NemsisError.unexpected }
+        let name = String(last)
+        if let customElementNode = version.agencyEmsCustomElement(named: name) {
+            // TODO handle multiple occurrences with correlation ID
             // remove custom results for this element
             var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                                   "eCustomResults.02[text()=\"\(name)\"]")
@@ -228,7 +225,8 @@ public class PatientCareReport: NemsisXml {
                     parent.removeChild(node)
                 }
             }
-            if target.count == 1 {
+            if customElementNode[attribute: "CustomElementID"] !=
+                customElementNode[element: "seCustomConfiguration.01"]?[attribute: "nemsisElement"] {
                 return
             }
         }
@@ -291,7 +289,11 @@ public class PatientCareReport: NemsisXml {
     override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)
-        if !xpath.hasPrefix("/") {
+        let customElementNode = version.agencyEmsCustomElement(named: name)
+        if let customElementNode,
+           customElementNode[attribute: "CustomElementID"] !=
+               customElementNode[element: "seCustomConfiguration.01"]?[attribute: "nemsisElement"] {
+            // TODO handle multiple occurrences with correlation id
             var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                                   "eCustomResults.02[text()=\"\(name)\"]")
             nodes = nodes.map { $0.parentElement! }
@@ -310,8 +312,6 @@ public class PatientCareReport: NemsisXml {
         var values: [NemsisValue] = []
         if nodes.count > 0 {
             let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
-            let customElementNode = version.agencyEmsCustomElement(named: name) ??
-                version.appEmsCustomElement(named: name)
             var customElementDescriptions: [String: String]?
             var customResultNodes: [Node]?
             if let customElementNode {
@@ -350,10 +350,8 @@ public class PatientCareReport: NemsisXml {
     override public func setNemsisValues(_ values: [NemsisValue], at xpath: String) throws {
         guard let last = xpath.split(separator: "/").last else { return }
         let name = String(last)
-        // get valid enumeration/negatives, if any TODO validation check?
-//        let (_, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
         // check for a custom element definition
-        let customElementNode = version.agencyEmsCustomElement(named: name) ?? version.appEmsCustomElement(named: name)
+        let customElementNode = version.agencyEmsCustomElement(named: name)
         var customElementValues: [String: String]?
         if let customElementNode {
             // gather any custom value mappings

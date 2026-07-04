@@ -67,14 +67,14 @@ struct NemsisKitTests {
         let pcr = try PatientCareReport(version: version)
         let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
         let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
-        #expect(node02.nextSibling == node03)
+        #expect(node02?.nextSibling == node03)
 
         let node141 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
         let node142 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
-        #expect(node141.nextSibling == node142)
+        #expect(node141?.nextSibling == node142)
 
         let newVitals = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
-        #expect(!newVitals.elements.isEmpty)
+        #expect(!(newVitals?.elements.isEmpty ?? true))
         print(try pcr.xmlString())
 
         try pcr.setNemsisValues([NemsisValue(value: try Date("2026-06-19T15:06:00-07:00", strategy: .iso8601))],
@@ -195,7 +195,7 @@ struct NemsisKitTests {
         try pcr.setNemsisValues([
             NemsisValue(value: "MX"),
             NemsisValue(value: "IT")
-        ], at: "eHistory.904")
+        ], at: "/PatientCareReport/eHistory/eHistory.904")
         query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                                "eCustomResults.02[text()=\"eHistory.904\"]")
         node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
@@ -204,7 +204,7 @@ struct NemsisKitTests {
         #expect(node?[elements: "eCustomResults.01"][0].textContent == "MX")
         #expect(node?[elements: "eCustomResults.01"][1].textContent == "IT")
 
-        values = try pcr.nemsisValues(at: "eHistory.904")
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eHistory/eHistory.904")
         #expect(values.count == 2)
         #expect(values[0].text == "MX")
         #expect(values[1].text == "IT")
