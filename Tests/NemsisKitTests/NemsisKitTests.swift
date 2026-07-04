@@ -187,10 +187,27 @@ struct NemsisKitTests {
         #expect(node?.textContent == "eDisposition.21")
         #expect(node?.previousSibling?.textContent == "4221043")
 
-        let values = try pcr.nemsisValues(at: "/PatientCareReport/eDisposition/eDisposition.21")
+        var values = try pcr.nemsisValues(at: "/PatientCareReport/eDisposition/eDisposition.21")
         #expect(values.count == 1)
         #expect(values[0].text == "4221043")
         #expect(values[0].displayText == "Alternate Care Site")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "MX"),
+            NemsisValue(value: "IT")
+        ], at: "eHistory.904")
+        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                               "eCustomResults.02[text()=\"eHistory.904\"]")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        #expect(node != nil)
+        #expect(node?[elements: "eCustomResults.01"].count == 2)
+        #expect(node?[elements: "eCustomResults.01"][0].textContent == "MX")
+        #expect(node?[elements: "eCustomResults.01"][1].textContent == "IT")
+
+        values = try pcr.nemsisValues(at: "eHistory.904")
+        #expect(values.count == 2)
+        #expect(values[0].text == "MX")
+        #expect(values[1].text == "IT")
 
         print(try pcr.xmlString())
     }

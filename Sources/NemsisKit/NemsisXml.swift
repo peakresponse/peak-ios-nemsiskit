@@ -41,6 +41,9 @@ public class NemsisXml {
     }
 
     public func firstNode(at xpath: String) throws -> Node? {
+        if !xpath.hasPrefix("/") {
+            return nil
+        }
         let query = try XPathQuery(xpath)
         return query.firstNodeResult(with: doc.node)?.node
     }

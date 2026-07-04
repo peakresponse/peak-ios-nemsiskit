@@ -212,9 +212,26 @@ public class PatientCareReport: NemsisXml {
         throw NemsisError.unexpected
     }
 
-    // swiftlint:disable:next cyclomatic_complexity function_body_length
+    // swiftlint:disable:next cyclomatic_complexity
     override public func removeNodes(at xpath: String, insertNV: Bool = true) throws {
         var target = xpath.split(separator: "/")
+        let name = String(target.last ?? "")
+        if target.count == 1 ||
+            version.agencyEmsCustomElement(named: name) != nil ||
+            version.appEmsCustomElement(named: name) != nil {
+            // remove custom results for this element
+            var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                  "eCustomResults.02[text()=\"\(name)\"]")
+            nodes = nodes.map { $0.parentElement! }
+            if let parent = nodes.first?.parentElement {
+                for node in nodes {
+                    parent.removeChild(node)
+                }
+            }
+            if target.count == 1 {
+                return
+            }
+        }
         var nextTarget = String(target.removeFirst())
         var nextIndex: Int?
         if nextTarget != "PatientCareReport" {
@@ -272,9 +289,24 @@ public class PatientCareReport: NemsisXml {
     }
 
     override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
-        let nodes = try nodes(at: xpath)
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)
+        if !xpath.hasPrefix("/") {
+            var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                  "eCustomResults.02[text()=\"\(name)\"]")
+            nodes = nodes.map { $0.parentElement! }
+            if nodes.count > 1 {
+
+            }
+            var values: [NemsisValue] = []
+            if let node = nodes.first {
+                for node in node[elements: "eCustomResults.01"] {
+                    values.append(NemsisValue(value: node.textContent))
+                }
+            }
+            return values
+        }
+        let nodes = try nodes(at: xpath)
         var values: [NemsisValue] = []
         if nodes.count > 0 {
             let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
@@ -339,39 +371,38 @@ public class PatientCareReport: NemsisXml {
         }
         // first remove existing nodes or set null with negative, per schema
         try removeNodes(at: xpath, insertNV: isNotRecorded)
-        if customElementNode != nil {
-            // remove custom results for this element
-            var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                                  "eCustomResults.02[text()=\"\(name)\"]")
-            nodes = nodes.map { $0.parentElement! }
-            if let parent = nodes.first?.parentElement {
-                for node in nodes {
-                    parent.removeChild(node)
-                }
-            }
-        }
         if !isNotRecorded, values.count > 0 {
             var node = try firstNode(at: xpath)
             for value in values {
-                if node == nil {
+                if node == nil, xpath.hasPrefix("/") {
                     node = try insertNode(at: xpath)
                 }
                 let text = value.text ?? ""
                 if let nemsisValue = customElementValues?[text] {
                     node?.textContent = nemsisValue
+                } else {
+                    node?.textContent = text
+                }
+                node?.removeAllAttributes()
+                if customElementNode != nil {
                     // insert custom results
                     var node = try firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                                             "eCustomResults.02[text()=\"\(name)\"]")
+                                             "eCustomResults.02[text()=\"\(name)\"]")?.parentElement
                     if node == nil {
                         node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
                         node?[element: "eCustomResults.01"]?.textContent = text
                         node?[element: "eCustomResults.02"]?.textContent = name
                         node = node?[element: "eCustomResults.01"]
+                    } else {
+                        if let prev = node?[elements: "eCustomResults.01"].last {
+                            node = node?.addElement("eCustomResults.01", at: .after(prev))
+                        } else {
+                            node = node?.addElement("eCustomResults.01", at: .first)
+                        }
+                        node?.textContent = text
                     }
-                } else {
-                    node?.textContent = text
+                    node?.removeAllAttributes()
                 }
-                node?.removeAllAttributes()
                 if let attributes = value.attributes {
                     for (key, value) in attributes {
                         node?[attribute: key] = value
