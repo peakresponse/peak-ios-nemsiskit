@@ -158,7 +158,7 @@ struct NemsisKitTests {
     func testNemsisCustomElements() throws {
         _ = try version.emsDataSetXsd()
         #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
-        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 4)
+        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 5)
         #expect(version.appCustomElements[emsDataSetFilename] != nil)
         #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
 
@@ -173,6 +173,9 @@ struct NemsisKitTests {
         #expect(enumeration?.count == 21)
         #expect(enumeration?[0].label == "Alternate Care Site")
         #expect(enumeration?[0].value == "4221043")
+
+        (_, enumeration, _) = try version.emsElementTypeInfo(named: "eMedications.08")
+        #expect(enumeration?.count == 26)
 
         (_, enumeration, _) = try version.emsElementTypeInfo(named: "eVitals.25")
         #expect(enumeration?.count == 10)
@@ -229,6 +232,11 @@ struct NemsisKitTests {
         #expect(node != nil)
         #expect(node?[element: "eCustomResults.01"]?.textContent == "3325019")
         #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "c101"),
+            NemsisValue(value: "c103")
+        ], at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
 
         print(try pcr.xmlString())
     }

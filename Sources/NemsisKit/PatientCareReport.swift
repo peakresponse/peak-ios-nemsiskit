@@ -361,9 +361,9 @@ public class PatientCareReport: NemsisXml {
                 return correlationId
             }
             // otherwise, check type info to see if allowed
-            if let typeNode = version.emsType(named: node.name) {
-                let query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension/xs:attribute[@name=\"CorrelationId\"]")
-                if query.firstNodeResult(with: typeNode) != nil {
+            if let elementNode = version.emsElement(named: node.name) {
+                let query = try XPathQuery("./xs:complexType/xs:simpleContent/xs:extension/xs:attribute[@name=\"CorrelationID\"]")
+                if query.firstNodeResult(with: elementNode) != nil {
                     if createIfMissing {
                         let uuid = UUID().uuidString.lowercased()
                         node[attribute: "CorrelationID"] = uuid

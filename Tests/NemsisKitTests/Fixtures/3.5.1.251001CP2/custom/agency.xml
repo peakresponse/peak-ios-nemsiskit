@@ -23,6 +23,21 @@
       <seCustomConfiguration.08>8801021</seCustomConfiguration.08>
       <seCustomConfiguration.08>8801023</seCustomConfiguration.08>
     </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="eMedications.08">
+      <seCustomConfiguration.01 nemsisElement="eMedications.08">Medication Complication</seCustomConfiguration.01>
+      <seCustomConfiguration.02>
+        Any complication (abnormal effect on the patient) associated with the administration of the medication to the patient by EMS
+      </seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902009</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923003</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903003</seCustomConfiguration.05>
+      <seCustomConfiguration.06 nemsisCode="3708035" customValueDescription="Breathing Rate Change">c101</seCustomConfiguration.06>
+      <seCustomConfiguration.06 nemsisCode="3708035" customValueDescription="Grunting">c102</seCustomConfiguration.06>
+      <seCustomConfiguration.06 nemsisCode="3708035" customValueDescription="Nose Flaring">c103</seCustomConfiguration.06>
+      <seCustomConfiguration.06 nemsisCode="3708035" customValueDescription="Wheezing">c104</seCustomConfiguration.06>
+      <seCustomConfiguration.07>7701001</seCustomConfiguration.07>
+      <seCustomConfiguration.07>7701003</seCustomConfiguration.07>
+    </seCustomConfiguration.CustomGroup>
     <seCustomConfiguration.CustomGroup CustomElementID="eVitals.25">
       <seCustomConfiguration.01 nemsisElement="eVitals.25">Temperature Method</seCustomConfiguration.01>
       <seCustomConfiguration.02>The method used to obtain the patient's body temperature.</seCustomConfiguration.02>
