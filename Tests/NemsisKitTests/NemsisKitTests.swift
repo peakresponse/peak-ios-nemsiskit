@@ -237,6 +237,18 @@ struct NemsisKitTests {
             NemsisValue(value: "c101"),
             NemsisValue(value: "c103")
         ], at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
+        query = try XPathQuery("/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
+        let nodes = query.nodesResult(with: pcr.doc.node).map { $0.node }
+        #expect(nodes.count == 2)
+        #expect(nodes[0]?[attribute: "CorrelationID"] != nil)
+        #expect(nodes[1]?[attribute: "CorrelationID"] != nil)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
+        #expect(values.count == 2)
+        #expect(values[0].text == "c101")
+        #expect(values[0].displayText == "Breathing Rate Change")
+        #expect(values[1].text == "c103")
+        #expect(values[1].displayText == "Nose Flaring")
 
         print(try pcr.xmlString())
     }

@@ -337,9 +337,18 @@ public class PatientCareReport: NemsisXml {
                 } else if let text = value.text, !text.isEmpty {
                     if let enumeration {
                         value.displayText = enumeration.first(where: { $0.1 == text })?.0
-                        if let customResultNodes, let customResultNode = customResultNodes.first {
-                            value.text = customResultNode[element: "eCustomResults.01"]?.textContent
-                            value.displayText = customElementDescriptions?[value.text ?? ""]
+                        if let customResultNodes {
+                            if let correlationId = try getCorrelationId(for: node, at: xpath),
+                               let customResultNode = customResultNodes
+                                .first(where: { $0[element: "eCustomResults.03"]?.textContent == correlationId }) {
+                                value.text = customResultNode[element: "eCustomResults.01"]?.textContent
+                                value.displayText = customElementDescriptions?[value.text ?? ""]
+                            } else if customResultNodes.count == 1, let customResultNode = customResultNodes.first {
+                                value.text = customResultNode[element: "eCustomResults.01"]?.textContent
+                                value.displayText = customElementDescriptions?[value.text ?? ""]
+                            } else {
+                                throw NemsisError.unexpected
+                            }
                         }
                     } else if baseType == "xs:dateTime", let date = try? Date(text, strategy: .iso8601) {
                         value.displayText = date.formatted(date: .abbreviated, time: .shortened)
