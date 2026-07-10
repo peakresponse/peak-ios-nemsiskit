@@ -461,20 +461,19 @@ public class PatientCareReport: NemsisXml {
                             } else {
                                 var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/eCustomResults.03[text()=\"\(correlationId)\"]")
                                 nodes = nodes.map { $0.parentElement! }
-                                if let node = nodes.first(where: { $0[element: "eCustomResults.02"]?.textContent == name }) {
-
-                                } else {
+                                node = nodes.first(where: { $0[element: "eCustomResults.02"]?.textContent == name })
+                                if node == nil {
                                     node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
-                                    if let nemsisValue = customElementValues?[text] {
-                                        node?[element: "eCustomResults.01"]?.textContent = nemsisValue
-                                    } else {
-                                        node?[element: "eCustomResults.01"]?.textContent = text
-                                    }
                                     node?[element: "eCustomResults.02"]?.textContent = name
                                     node?.addElement("eCustomResults.03", at: .last)
                                     node?[element: "eCustomResults.03"]?.textContent = correlationId
-                                    node = node?[element: "eCustomResults.01"]
                                 }
+                                if let nemsisValue = customElementValues?[text] {
+                                    node?[element: "eCustomResults.01"]?.textContent = nemsisValue
+                                } else {
+                                    node?[element: "eCustomResults.01"]?.textContent = text
+                                }
+                                node = node?[element: "eCustomResults.01"]
                             }
                         } else if name == customGroupingElement[attribute: "CustomElementID"] {
                             // insert new results group with new correlation ID

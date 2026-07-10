@@ -267,6 +267,17 @@ struct NemsisKitTests {
         node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
         #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
 
+        try pcr.setNemsisValues([
+            NemsisValue(value: "To place pt in ambulance")
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.03")
+        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                               "eCustomResults.02[text()=\"ceRestraint.03\"]")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
+        #expect(values.count == 1)
+
         print(try pcr.xmlString())
     }
 
