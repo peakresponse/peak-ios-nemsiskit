@@ -61,6 +61,7 @@ public class Nemsis {
     var elements: [String: [String: Node]] = [:]
     var agencyCustomElements: [String: [String: Node]] = [:]
     var appCustomElements: [String: [String: Node]] = [:]
+    var customGroupingElements: [String: Node] = [:]
 
     let schematronValidator: SchematronValidator
     public var webView: WKWebView {
@@ -154,6 +155,11 @@ public class Nemsis {
             for result in results {
                 guard let node = result.node, let name = node[attribute: "CustomElementID"] else { continue }
                 agencyCustomElements[emsDataSetFilename]?[name] = node
+                if let customGroupingId = node[element: "seCustomConfiguration.09"]?.textContent,
+                   let customGroupingElement = agencyCustomElements[emsDataSetFilename]?[customGroupingId] {
+                    customGroupingElements[name] = customGroupingElement
+                    customGroupingElements[customGroupingId] = customGroupingElement
+                }
             }
         }
         if FileManager.default.fileExists(atPath: appCustomElementsURL.path) {
@@ -186,6 +192,10 @@ public class Nemsis {
 
     public func appEmsCustomElement(named: String) -> Node? {
         return appCustomElements[emsDataSetFilename]?[named]
+    }
+
+    public func customGroupingElement(for name: String) -> Node? {
+        return customGroupingElements[name]
     }
 
     // swiftlint:disable:next large_tuple function_body_length cyclomatic_complexity

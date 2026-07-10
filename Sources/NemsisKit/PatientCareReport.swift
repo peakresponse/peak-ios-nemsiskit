@@ -440,48 +440,100 @@ public class PatientCareReport: NemsisXml {
                 }
                 node?.removeAllAttributes()
                 if customElementNode != nil {
-                    // find/set correlation id for nearest repeating element, if any
-                    let correlationId = try getCorrelationId(for: node, at: xpath, createIfMissing: true)
-                    // insert custom results
-                    var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                                          "eCustomResults.02[text()=\"\(name)\"]")
-                    nodes = nodes.map { $0.parentElement! }
-                    if let correlationId {
-                        var isFound = false
-                        for parentNode in nodes where parentNode[element: "eCustomResults.03"]?.textContent == correlationId {
-                            isFound = true
-                            if let prev = parentNode[elements: "eCustomResults.01"].last {
-                                node = parentNode.addElement("eCustomResults.01", at: .after(prev))
+                    // check if this is a custom repeating group
+                    if let customGroupingElement = version.customGroupingElement(for: name) {
+                        // check if there's a CorrelationID specified or if we're inserting a new record
+                        let regex = try NSRegularExpression(pattern: "\\[@CorrelationID=\"([^\"]+)\"\\]")
+                        let matches = regex.matches(in: xpath, range: NSRange(location: 0, length: xpath.count))
+                        if let match = matches.last, match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: xpath) {
+                            // extract CorrelationID
+                            let correlationId = String(xpath[range])
+                            if name == customGroupingElement[element: "seCustomConfiguration.09"]?.textContent {
+                                node = try firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup[@CorrelationID=\"\(correlationId)\"]")
+                                if let node {
+                                    if let nemsisValue = customElementValues?[text] {
+                                        node[element: "eCustomResults.01"]?.textContent = nemsisValue
+                                    } else {
+                                        node[element: "eCustomResults.01"]?.textContent = text
+                                    }
+                                }
+                                node = node?[element: "eCustomResults.01"]
                             } else {
-                                node = parentNode.addElement("eCustomResults.01", at: .first)
+                                var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/eCustomResults.03[text()=\"\(correlationId)\"]")
+                                nodes = nodes.map { $0.parentElement! }
+                                if let node = nodes.first(where: { $0[element: "eCustomResults.02"]?.textContent == name }) {
+
+                                } else {
+                                    node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                                    if let nemsisValue = customElementValues?[text] {
+                                        node?[element: "eCustomResults.01"]?.textContent = nemsisValue
+                                    } else {
+                                        node?[element: "eCustomResults.01"]?.textContent = text
+                                    }
+                                    node?[element: "eCustomResults.02"]?.textContent = name
+                                    node?.addElement("eCustomResults.03", at: .last)
+                                    node?[element: "eCustomResults.03"]?.textContent = correlationId
+                                    node = node?[element: "eCustomResults.01"]
+                                }
                             }
-                            break
-                        }
-                        if !isFound {
+                        } else if name == customGroupingElement[attribute: "CustomElementID"] {
+                            // insert new results group with new correlation ID
                             node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
-                            node?[element: "eCustomResults.01"]?.textContent = text
-                            node?[element: "eCustomResults.02"]?.textContent = name
-                            let correlationIdNode = node?.addElement("eCustomResults.03", at: .last)
-                            correlationIdNode?.textContent = correlationId
-                            node = node?[element: "eCustomResults.01"]
-                        }
-                        node?.textContent = text
-                    } else {
-                        if nodes.isEmpty {
-                            node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
-                            node?[element: "eCustomResults.01"]?.textContent = text
-                            node?[element: "eCustomResults.02"]?.textContent = name
-                            node = node?[element: "eCustomResults.01"]
-                        } else if nodes.count == 1 {
-                            node = nodes.first
-                            if let prev = node?[elements: "eCustomResults.01"].last {
-                                node = node?.addElement("eCustomResults.01", at: .after(prev))
+                            node?[attribute: "CorrelationID"] = UUID().uuidString.lowercased()
+                            if let nemsisValue = customElementValues?[text] {
+                                node?[element: "eCustomResults.01"]?.textContent = nemsisValue
                             } else {
-                                node = node?.addElement("eCustomResults.01", at: .first)
+                                node?[element: "eCustomResults.01"]?.textContent = text
+                            }
+                            node?[element: "eCustomResults.02"]?.textContent = name
+                            node = node?[element: "eCustomResults.01"]
+                        } else {
+                            throw NemsisError.unexpected
+                        }
+                    } else {
+                        // find/set correlation id for nearest repeating element, if any
+                        let correlationId = try getCorrelationId(for: node, at: xpath, createIfMissing: true)
+                        // insert custom results
+                        var nodes = try nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                              "eCustomResults.02[text()=\"\(name)\"]")
+                        nodes = nodes.map { $0.parentElement! }
+                        if let correlationId {
+                            var isFound = false
+                            for parentNode in nodes where parentNode[element: "eCustomResults.03"]?.textContent == correlationId {
+                                isFound = true
+                                if let prev = parentNode[elements: "eCustomResults.01"].last {
+                                    node = parentNode.addElement("eCustomResults.01", at: .after(prev))
+                                } else {
+                                    node = parentNode.addElement("eCustomResults.01", at: .first)
+                                }
+                                break
+                            }
+                            if !isFound {
+                                node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                                node?[element: "eCustomResults.01"]?.textContent = text
+                                node?[element: "eCustomResults.02"]?.textContent = name
+                                let correlationIdNode = node?.addElement("eCustomResults.03", at: .last)
+                                correlationIdNode?.textContent = correlationId
+                                node = node?[element: "eCustomResults.01"]
                             }
                             node?.textContent = text
                         } else {
-                            throw NemsisError.unexpected
+                            if nodes.isEmpty {
+                                node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                                node?[element: "eCustomResults.01"]?.textContent = text
+                                node?[element: "eCustomResults.02"]?.textContent = name
+                                node = node?[element: "eCustomResults.01"]
+                            } else if nodes.count == 1 {
+                                node = nodes.first
+                                if let prev = node?[elements: "eCustomResults.01"].last {
+                                    node = node?.addElement("eCustomResults.01", at: .after(prev))
+                                } else {
+                                    node = node?.addElement("eCustomResults.01", at: .first)
+                                }
+                                node?.textContent = text
+                            } else {
+                                throw NemsisError.unexpected
+                            }
                         }
                     }
                     node?.removeAllAttributes()

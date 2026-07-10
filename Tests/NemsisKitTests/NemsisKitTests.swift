@@ -158,7 +158,7 @@ struct NemsisKitTests {
     func testNemsisCustomElements() throws {
         _ = try version.emsDataSetXsd()
         #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
-        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 5)
+        #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 8)
         #expect(version.appCustomElements[emsDataSetFilename] != nil)
         #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
 
@@ -223,7 +223,7 @@ struct NemsisKitTests {
         query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
         node = query.firstNodeResult(with: pcr.doc.node)?.node
         #expect(node?.textContent == "3325011")
-        let correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
+        var correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
         #expect(correlationId != nil)
 
         query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
@@ -249,6 +249,23 @@ struct NemsisKitTests {
         #expect(values[0].displayText == "Breathing Rate Change")
         #expect(values[1].text == "c103")
         #expect(values[1].displayText == "Nose Flaring")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "2018-01-30T13:01:00-05:00")
+        ], at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
+        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                               "eCustomResults.02[text()=\"ceRestraint.01\"]")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        correlationId = node?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "Stretcher restraint")
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.02")
+        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                               "eCustomResults.02[text()=\"ceRestraint.02\"]")
+        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
 
         print(try pcr.xmlString())
     }

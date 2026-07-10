@@ -63,6 +63,45 @@
       <seCustomConfiguration.06 customValueDescription="-4 Deep sedation">-4</seCustomConfiguration.06>
       <seCustomConfiguration.06 customValueDescription="-5 Unarousable">-5</seCustomConfiguration.06>
     </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="ceRestraint.01">
+      <seCustomConfiguration.01>
+Date/Time Patient Restraint Occurred
+      </seCustomConfiguration.01>
+      <seCustomConfiguration.02>
+The date and time the patient was restrained.
+      </seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902003</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923003</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903001</seCustomConfiguration.05>
+    </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="ceRestraint.02">
+      <seCustomConfiguration.01>
+Type of Patient Restraint
+      </seCustomConfiguration.01>
+      <seCustomConfiguration.02>
+The type of restraint used on the patient.
+      </seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902009</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923001</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903003</seCustomConfiguration.05>
+      <seCustomConfiguration.07>7701001</seCustomConfiguration.07>
+      <seCustomConfiguration.07>7701003</seCustomConfiguration.07>
+      <seCustomConfiguration.09>ceRestraint.01</seCustomConfiguration.09>
+    </seCustomConfiguration.CustomGroup>
+    <seCustomConfiguration.CustomGroup CustomElementID="ceRestraint.03">
+      <seCustomConfiguration.01>
+Reason for Patient Restraint
+      </seCustomConfiguration.01>
+      <seCustomConfiguration.02>
+The reason for restraining the patient.
+      </seCustomConfiguration.02>
+      <seCustomConfiguration.03>9902009</seCustomConfiguration.03>
+      <seCustomConfiguration.04>9923001</seCustomConfiguration.04>
+      <seCustomConfiguration.05>9903003</seCustomConfiguration.05>
+      <seCustomConfiguration.07>7701001</seCustomConfiguration.07>
+      <seCustomConfiguration.07>7701003</seCustomConfiguration.07>
+      <seCustomConfiguration.09>ceRestraint.01</seCustomConfiguration.09>
+    </seCustomConfiguration.CustomGroup>
   </seCustomConfiguration>
   <sSoftware>
     <sSoftware.SoftwareGroup>
