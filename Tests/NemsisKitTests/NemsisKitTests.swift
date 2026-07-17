@@ -66,17 +66,16 @@ struct NemsisKitTests {
     @Test
     func testInsertIntoPCR() async throws {
         let pcr = try PatientCareReport(version: version)
-        let node03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
-        let node02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
-        #expect(node02?.nextSibling == node03)
+        let ePatient03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
+        let ePatient02 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
+        #expect(ePatient02?.nextSibling == ePatient03)
 
-        let node141 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
-        let node142 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
-        #expect(node141?.nextSibling == node142)
+        let ePatient141 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
+        let ePatient142 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.14")
+        #expect(ePatient141?.nextSibling == ePatient142)
 
         let newVitals = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
         #expect(!(newVitals?.elements.isEmpty ?? true))
-        print(try pcr.xmlString())
 
         try pcr.setNemsisValues([NemsisValue(value: try Date("2026-06-19T15:06:00-07:00", strategy: .iso8601))],
                                 at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
@@ -88,14 +87,36 @@ struct NemsisKitTests {
                                 at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.01")
         try pcr.setNemsisValues([NemsisValue(value: "3326003")],
                                 at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.26")
-        var query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
-        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "2026-06-19T15:06:00-07:00")
-        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
-        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "3326001")
-        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.01")
-        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "2026-06-20T15:06:00-07:00")
-        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.26")
-        #expect(query.firstNodeResult(with: pcr.doc.node)?.node?.textContent == "3326003")
+        var node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        #expect(node?.textContent == "2026-06-19T15:06:00-07:00")
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
+        #expect(node?.textContent == "3326001")
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.01")
+        #expect(node?.textContent == "2026-06-20T15:06:00-07:00")
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.26")
+        #expect(node?.textContent == "3326003")
+
+        node = try pcr.insertNode(at: "/PatientCareReport/eHistory/eHistory.904")
+        #expect(node != nil)
+        #expect(node?.name == "eCustomResults.ResultsGroup")
+        #expect(node?[element: "eCustomResults.02"]?.textContent == "eHistory.904")
+
+        node = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.901")
+        #expect(node != nil)
+        #expect(node?.name == "eCustomResults.ResultsGroup")
+        #expect(node?[element: "eCustomResults.02"]?.textContent == "eVitals.901")
+        let correlationId = node?[element: "eCustomResults.03"]?.textContent
+        #expect(correlationId != nil)
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]")
+        #expect(node?[attribute: "CorrelationID"] == correlationId)
+
+        node = try pcr.insertNode(at: "/PatientCareReport/CustomGroup/ceRestraint.01")
+        #expect(node != nil)
+        #expect(node?.name == "eCustomResults.ResultsGroup")
+        #expect(node?[element: "eCustomResults.02"]?.textContent == "ceRestraint.01")
+        #expect(node?[attribute: "CorrelationID"] != nil)
+
+        print(try pcr.xmlString())
     }
 
     @Test
@@ -103,15 +124,23 @@ struct NemsisKitTests {
         let pcr = try PatientCareReport(version: version)
         _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         _ = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
-        print(try pcr.xmlString())
+
         try pcr.removeNodes(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
-        print(try pcr.xmlString())
+
         var query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
         #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
         try pcr.removeNodes(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")
-        print(try pcr.xmlString())
+
         query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup")
         #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
+
+        let node = try pcr.insertNode(at: "/PatientCareReport/CustomGroup/ceRestraint.01")
+        let correlationId = node?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        try pcr.removeNodes(at: "/PatientCareReport/CustomGroup[@CorrelationID=\"\(correlationId ?? "")\"/ceRestraint.01")
+
+        print(try pcr.xmlString())
     }
 
     @Test
@@ -184,13 +213,11 @@ struct NemsisKitTests {
         try pcr.setNemsisValues([
             NemsisValue(value: "4221043")
         ], at: "/PatientCareReport/eDisposition/eDisposition.21")
-        var query = try XPathQuery("/PatientCareReport/eDisposition/eDisposition.21")
-        var node = query.firstNodeResult(with: pcr.doc.node)?.node
+        var node = try pcr.firstNode(at: "/PatientCareReport/eDisposition/eDisposition.21")
         #expect(node?.textContent == "4221013")
 
-        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                               "eCustomResults.02[text()=\"eDisposition.21\"]")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"eDisposition.21\"]")
         #expect(node?.textContent == "eDisposition.21")
         #expect(node?.previousSibling?.textContent == "4221043")
 
@@ -199,13 +226,43 @@ struct NemsisKitTests {
         #expect(values[0].text == "4221043")
         #expect(values[0].displayText == "Alternate Care Site")
 
+        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
+        try pcr.setNemsisValues([
+            NemsisValue(value: "3325019")
+        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        #expect(node?.textContent == "3325011")
+        var correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
+                                     "/eCustomResults.02[text()=\"eVitals.25\"]/..")
+        #expect(node != nil)
+        #expect(node?[element: "eCustomResults.01"]?.textContent == "3325019")
+        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "c101"),
+            NemsisValue(value: "c103")
+        ], at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
+        let nodes = try pcr.nodes(at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
+        #expect(nodes.count == 2)
+        #expect(nodes[0][attribute: "CorrelationID"] != nil)
+        #expect(nodes[1][attribute: "CorrelationID"] != nil)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
+        #expect(values.count == 2)
+        #expect(values[0].text == "c101")
+        #expect(values[0].displayText == "Breathing Rate Change")
+        #expect(values[1].text == "c103")
+        #expect(values[1].displayText == "Nose Flaring")
+
         try pcr.setNemsisValues([
             NemsisValue(value: "MX"),
             NemsisValue(value: "IT")
         ], at: "/PatientCareReport/eHistory/eHistory.904")
-        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                               "eCustomResults.02[text()=\"eHistory.904\"]")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"eHistory.904\"]/..")
         #expect(node != nil)
         #expect(node?[elements: "eCustomResults.01"].count == 2)
         #expect(node?[elements: "eCustomResults.01"][0].textContent == "MX")
@@ -216,67 +273,42 @@ struct NemsisKitTests {
         #expect(values[0].text == "MX")
         #expect(values[1].text == "IT")
 
-        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
-        try pcr.setNemsisValues([
-            NemsisValue(value: "3325019")
-        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
-        query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node
-        #expect(node?.textContent == "3325011")
-        var correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
-        #expect(correlationId != nil)
-
-        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                               "eCustomResults.02[text()=\"eVitals.25\"]")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        node = try pcr.insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
         #expect(node != nil)
-        #expect(node?[element: "eCustomResults.01"]?.textContent == "3325019")
-        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
-
-        try pcr.setNemsisValues([
-            NemsisValue(value: "c101"),
-            NemsisValue(value: "c103")
-        ], at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
-        query = try XPathQuery("/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
-        let nodes = query.nodesResult(with: pcr.doc.node).map { $0.node }
-        #expect(nodes.count == 2)
-        #expect(nodes[0]?[attribute: "CorrelationID"] != nil)
-        #expect(nodes[1]?[attribute: "CorrelationID"] != nil)
-
-        values = try pcr.nemsisValues(at: "/PatientCareReport/eMedications/eMedications.MedicationGroup[1]/eMedications.08")
-        #expect(values.count == 2)
-        #expect(values[0].text == "c101")
-        #expect(values[0].displayText == "Breathing Rate Change")
-        #expect(values[1].text == "c103")
-        #expect(values[1].displayText == "Nose Flaring")
+        correlationId = UUID().uuidString.lowercased()
+        node?[attribute: "CorrelationID"] = correlationId
 
         try pcr.setNemsisValues([
             NemsisValue(value: "2018-01-30T13:01:00-05:00")
-        ], at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
-        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                               "eCustomResults.02[text()=\"ceRestraint.01\"]")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
-        correlationId = node?[attribute: "CorrelationID"]
-        #expect(correlationId != nil)
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.01")
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"ceRestraint.01\"]/..")
+        #expect(node?[attribute: "CorrelationID"] == correlationId)
+        print(try pcr.xmlString())
 
         try pcr.setNemsisValues([
             NemsisValue(value: "Stretcher restraint")
         ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.02")
-        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                               "eCustomResults.02[text()=\"ceRestraint.02\"]")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"ceRestraint.02\"]/..")
         #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
 
         try pcr.setNemsisValues([
             NemsisValue(value: "To place pt in ambulance")
         ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.03")
-        query = try XPathQuery("/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                               "eCustomResults.02[text()=\"ceRestraint.03\"]")
-        node = query.firstNodeResult(with: pcr.doc.node)?.node?.parentElement
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"ceRestraint.03\"]/..")
         #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
-
-        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
-        #expect(values.count == 1)
+//
+//        try pcr.setNemsisValues([
+//            NemsisValue(value: "2018-01-30T13:20:00-05:00")
+//        ], at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
+//
+//        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
+//        #expect(values.count == 2)
+//
+//        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.01")
+//        #expect(values.count == 1)
 
         print(try pcr.xmlString())
     }

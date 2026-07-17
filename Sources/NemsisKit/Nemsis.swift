@@ -36,6 +36,10 @@ func enumTuples(for typeNode: Node) throws -> [(label: String, value: String)]? 
     return nil
 }
 
+public enum NemsisElementType {
+    case standard, extended, custom, customGrouped
+}
+
 @MainActor
 public class Nemsis {
     public let versionString: String
@@ -184,6 +188,22 @@ public class Nemsis {
 
     public func emsElement(named: String) -> Node? {
         return elements[emsDataSetFilename]?[named]
+    }
+
+    public func emsElementType(named: String) -> NemsisElementType? {
+        if let customElement = agencyEmsCustomElement(named: named) {
+            if customElement[attribute: "CustomElementID"] == customElement[element: "seCustomConfiguration.01"]?[attribute: "nemsisElement"] {
+                return .extended
+            }
+            if customGroupingElement(for: named) != nil {
+                return .customGrouped
+            }
+            return .custom
+        }
+        if emsElement(named: named) != nil {
+            return .standard
+        }
+        return nil
     }
 
     public func agencyEmsCustomElement(named: String) -> Node? {
