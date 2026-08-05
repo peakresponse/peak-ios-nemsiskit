@@ -129,7 +129,7 @@ public class NemsisValue: NSObject {
         self.attributes = attributes
     }
 
-    public init(value: Any? = nil, negativeValue: String? = nil) {
+    public init(value: Any? = nil, attributes: [String: String]? = nil, negativeValue: String? = nil) {
         super.init()
         switch value {
         case let value as String:
@@ -154,6 +154,9 @@ public class NemsisValue: NSObject {
             } else {
                 text = nil
             }
+        }
+        if let attributes {
+            self.attributes = attributes
         }
         self.negativeValue = text == nil && negativeValue == nil ? NemsisNegative.notRecorded.rawValue : negativeValue
     }
