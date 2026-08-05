@@ -14,38 +14,43 @@ import Testing
 
 let versionString = "3.5.1.251001CP2"
 
+@MainActor
+func loadFixtures(version: Nemsis) throws {
+    let fixturesURL = Bundle.module.url(forResource: "Fixtures/\(versionString)", withExtension: nil)!
+    let xsdsURL = fixturesURL.appendingPathComponent("xsds")
+    let xsdURLs = try FileManager.default.contentsOfDirectory(at: xsdsURL, includingPropertiesForKeys: nil)
+    for xsdURL in xsdURLs {
+        let destURL = version.xsdsDirectoryURL.appendingPathComponent(xsdURL.lastPathComponent)
+        if !FileManager.default.fileExists(atPath: destURL.path) {
+            try FileManager.default.copyItem(at: xsdURL, to: destURL)
+        }
+    }
+    let schsURL = fixturesURL.appendingPathComponent("schs")
+    let schURLs = try FileManager.default.contentsOfDirectory(at: schsURL, includingPropertiesForKeys: nil)
+    for schURL in schURLs {
+        let destURL = version.schsDirectoryURL.appendingPathComponent(schURL.lastPathComponent)
+        if !FileManager.default.fileExists(atPath: destURL.path) {
+            try FileManager.default.copyItem(at: schURL, to: destURL)
+        }
+    }
+    let customURL = fixturesURL.appendingPathComponent("custom")
+    let customURLs = try FileManager.default.contentsOfDirectory(at: customURL, includingPropertiesForKeys: nil)
+    for customURL in customURLs {
+        let destURL = version.customDirectoryURL.appendingPathComponent(customURL.lastPathComponent)
+        if FileManager.default.fileExists(atPath: destURL.path) {
+            _ = try? FileManager.default.removeItem(at: destURL)
+        }
+        try FileManager.default.copyItem(at: customURL, to: destURL)
+    }
+}
+
 @MainActor // swiftlint:disable:next type_body_length
 struct NemsisKitTests {
     let version: Nemsis
 
     init() throws {
         version = try Nemsis(version: versionString)
-        let fixturesURL = Bundle.module.url(forResource: "Fixtures/\(versionString)", withExtension: nil)!
-        let xsdsURL = fixturesURL.appendingPathComponent("xsds")
-        let xsdURLs = try FileManager.default.contentsOfDirectory(at: xsdsURL, includingPropertiesForKeys: nil)
-        for xsdURL in xsdURLs {
-            let destURL = version.xsdsDirectoryURL.appendingPathComponent(xsdURL.lastPathComponent)
-            if !FileManager.default.fileExists(atPath: destURL.path) {
-                try FileManager.default.copyItem(at: xsdURL, to: destURL)
-            }
-        }
-        let schsURL = fixturesURL.appendingPathComponent("schs")
-        let schURLs = try FileManager.default.contentsOfDirectory(at: schsURL, includingPropertiesForKeys: nil)
-        for schURL in schURLs {
-            let destURL = version.schsDirectoryURL.appendingPathComponent(schURL.lastPathComponent)
-            if !FileManager.default.fileExists(atPath: destURL.path) {
-                try FileManager.default.copyItem(at: schURL, to: destURL)
-            }
-        }
-        let customURL = fixturesURL.appendingPathComponent("custom")
-        let customURLs = try FileManager.default.contentsOfDirectory(at: customURL, includingPropertiesForKeys: nil)
-        for customURL in customURLs {
-            let destURL = version.customDirectoryURL.appendingPathComponent(customURL.lastPathComponent)
-            if FileManager.default.fileExists(atPath: destURL.path) {
-                _ = try? FileManager.default.removeItem(at: destURL)
-            }
-            try FileManager.default.copyItem(at: customURL, to: destURL)
-        }
+        try loadFixtures(version: version)
     }
 
     @Test
@@ -137,24 +142,6 @@ struct NemsisKitTests {
         let enumValues = try pcr.nemsisValues(at: "/PatientCareReport/ePatient/ePatient.14")
         #expect(enumValues[0].displayText == "Asian")
         #expect(enumValues[1].displayText == "White")
-    }
-
-    @Test
-    func testSetNemsisValues() throws {
-        let pcr = try PatientCareReport(version: version)
-        try pcr.setNemsisValues([
-            NemsisValue(value: "2514001"),
-            NemsisValue(value: "2514003")
-        ], at: "/PatientCareReport/ePatient/ePatient.14")
-        try pcr.setNemsisValues([NemsisValue(negativeValue: "7701003")],
-                                at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.02")
-        try pcr.setNemsisValues([NemsisValue(value: "3326001")],
-                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
-        print(try pcr.xmlString())
-        let query = try XPathQuery("/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.26")
-        let eVitals26node = query.firstNodeResult(with: pcr.doc.node)?.node
-        #expect(eVitals26node?.textContent == "3326001")
-        #expect(eVitals26node?.previousSibling?.name == "eVitals.GlasgowScoreGroup")
     }
 
     @Test

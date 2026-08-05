@@ -158,6 +158,11 @@ public class NemsisValue: NSObject {
         self.negativeValue = text == nil && negativeValue == nil ? NemsisNegative.notRecorded.rawValue : negativeValue
     }
 
+    public init(negative: NemsisNegative) {
+        super.init()
+        self.negative = negative
+    }
+
     override public func isEqual(_ object: Any?) -> Bool {
         if let object = object as? NemsisValue {
             if self === object {

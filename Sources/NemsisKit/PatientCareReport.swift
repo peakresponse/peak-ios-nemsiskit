@@ -317,8 +317,8 @@ public class PatientCareReport: NemsisXml {
         let name = String(last)
 
         // check if we're just setting Not Recorded, which will be handled by the remove
-        var isNotRecorded = false
-        if values.count == 1, let value = values.first, value.isNil && value.negative == .notRecorded {
+        var isNotRecorded = values.count == 0
+        if !isNotRecorded, values.count == 1, let value = values.first, value.isNil && value.negative == .notRecorded {
             isNotRecorded = true
         }
 
