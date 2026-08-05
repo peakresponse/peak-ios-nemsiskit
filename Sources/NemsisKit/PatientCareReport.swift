@@ -322,10 +322,10 @@ public class PatientCareReport: NemsisXml {
             isNotRecorded = true
         }
 
+        // first remove existing nodes or set null with negative, per schema
+        try removeNodes(at: xpath, insertNV: isNotRecorded)
         switch version.emsElementType(named: name) {
         case .standard, .extended:
-            // first remove existing nodes or set null with negative, per schema
-            try removeNodes(at: xpath, insertNV: isNotRecorded)
             // check for custom element extended valuess
             let customElement = version.agencyEmsCustomElement(named: name)
             var customElementValues: [String: String]?
@@ -361,8 +361,6 @@ public class PatientCareReport: NemsisXml {
                 }
             }
         case .custom, .customGrouped:
-            // first remove existing nodes or set null with negative, per schema
-            try removeNodes(at: xpath, insertNV: isNotRecorded)
             for value in values {
                 let text = value.text ?? ""
                 let node = try insertCustomResultValue(text, for: nil, at: xpath)
