@@ -69,7 +69,8 @@ extension PatientCareReport {
         for node in nodes {
             for subnode in node[elements: "eCustomResults.01"] {
                 let value = NemsisValue(value: subnode.textContent)
-                if elementType == .customGrouped, let correlationId = node[attribute: "CorrelationID"] ?? node[element: "eCustomResults.03"]?.textContent {
+                if elementType == .customGrouped,
+                   let correlationId = node[attribute: "CorrelationID"] ?? node[element: "eCustomResults.03"]?.textContent {
                     if value.attributes == nil {
                         value.attributes = [:]
                     }

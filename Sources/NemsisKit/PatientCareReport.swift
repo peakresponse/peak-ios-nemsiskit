@@ -290,6 +290,7 @@ public class PatientCareReport: NemsisXml {
                                     .first(where: { $0[element: "eCustomResults.03"]?.textContent == correlationId }) {
                                     value.text = customResultNode[element: "eCustomResults.01"]?.textContent
                                     value.displayText = customElementDescriptions?[value.text ?? ""]
+                                    value.attributes?.removeValue(forKey: "CorrelationID")
                                 } else if customResultNodes.count == 1, let customResultNode = customResultNodes.first {
                                     value.text = customResultNode[element: "eCustomResults.01"]?.textContent
                                     value.displayText = customElementDescriptions?[value.text ?? ""]
