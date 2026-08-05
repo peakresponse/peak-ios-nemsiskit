@@ -96,26 +96,6 @@ struct NemsisKitTests {
         node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.26")
         #expect(node?.textContent == "3326003")
 
-        node = try pcr.insertNode(at: "/PatientCareReport/eHistory/eHistory.904")
-        #expect(node != nil)
-        #expect(node?.name == "eCustomResults.ResultsGroup")
-        #expect(node?[element: "eCustomResults.02"]?.textContent == "eHistory.904")
-
-        node = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.901")
-        #expect(node != nil)
-        #expect(node?.name == "eCustomResults.ResultsGroup")
-        #expect(node?[element: "eCustomResults.02"]?.textContent == "eVitals.901")
-        let correlationId = node?[element: "eCustomResults.03"]?.textContent
-        #expect(correlationId != nil)
-        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]")
-        #expect(node?[attribute: "CorrelationID"] == correlationId)
-
-        node = try pcr.insertNode(at: "/PatientCareReport/CustomGroup/ceRestraint.01")
-        #expect(node != nil)
-        #expect(node?.name == "eCustomResults.ResultsGroup")
-        #expect(node?[element: "eCustomResults.02"]?.textContent == "ceRestraint.01")
-        #expect(node?[attribute: "CorrelationID"] != nil)
-
         print(try pcr.xmlString())
     }
 
@@ -133,12 +113,6 @@ struct NemsisKitTests {
 
         query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup")
         #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
-
-        let node = try pcr.insertNode(at: "/PatientCareReport/CustomGroup/ceRestraint.01")
-        let correlationId = node?[attribute: "CorrelationID"]
-        #expect(correlationId != nil)
-
-        try pcr.removeNodes(at: "/PatientCareReport/CustomGroup[@CorrelationID=\"\(correlationId ?? "")\"/ceRestraint.01")
 
         print(try pcr.xmlString())
     }
@@ -185,6 +159,11 @@ struct NemsisKitTests {
 
     @Test
     func testNemsisCustomElements() throws {
+        let pcr = try PatientCareReport(version: version)
+        var node: Node?
+        var values: [NemsisValue]
+        var correlationId: String?
+
         _ = try version.emsDataSetXsd()
         #expect(version.agencyCustomElements[emsDataSetFilename] != nil)
         #expect(version.agencyCustomElements[emsDataSetFilename]?.count == 8)
@@ -198,6 +177,37 @@ struct NemsisKitTests {
         #expect(negatives?[0].label == "Refused")
         #expect(negatives?[0].value == "8801019")
 
+        try pcr.setNemsisValues([
+            NemsisValue(value: "MX"),
+            NemsisValue(value: "IT")
+        ], at: "/PatientCareReport/eHistory/eHistory.904")
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"eHistory.904\"]/..")
+        #expect(node != nil)
+        #expect(node?[elements: "eCustomResults.01"].count == 2)
+        #expect(node?[elements: "eCustomResults.01"][0].textContent == "MX")
+        #expect(node?[elements: "eCustomResults.01"][1].textContent == "IT")
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eHistory/eHistory.904")
+        #expect(values.count == 2)
+        #expect(values[0].text == "MX")
+        #expect(values[1].text == "IT")
+
+        try pcr.setNemsisValues([
+            NemsisValue(negativeValue: NemsisNegative.refused.rawValue)
+        ], at: "/PatientCareReport/eHistory/eHistory.904")
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                     "eCustomResults.02[text()=\"eHistory.904\"]/..")
+        #expect(node != nil)
+        #expect(node?[elements: "eCustomResults.01"].count == 1)
+        #expect(node?[elements: "eCustomResults.01"][0].textContent == "")
+        #expect(node?[elements: "eCustomResults.01"][0][attribute: "xsi:nil"] == "true")
+        #expect(node?[elements: "eCustomResults.01"][0][attribute: "PN"] == NemsisNegative.refused.rawValue)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eHistory/eHistory.904")
+        #expect(values.count == 1)
+        #expect(values[0].negative == NemsisNegative.refused)
+
         (_, enumeration, _) = try version.emsElementTypeInfo(named: "eDisposition.21")
         #expect(enumeration?.count == 21)
         #expect(enumeration?[0].label == "Alternate Care Site")
@@ -209,11 +219,10 @@ struct NemsisKitTests {
         (_, enumeration, _) = try version.emsElementTypeInfo(named: "eVitals.25")
         #expect(enumeration?.count == 10)
 
-        let pcr = try PatientCareReport(version: version)
         try pcr.setNemsisValues([
             NemsisValue(value: "4221043")
         ], at: "/PatientCareReport/eDisposition/eDisposition.21")
-        var node = try pcr.firstNode(at: "/PatientCareReport/eDisposition/eDisposition.21")
+        node = try pcr.firstNode(at: "/PatientCareReport/eDisposition/eDisposition.21")
         #expect(node?.textContent == "4221013")
 
         node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
@@ -221,10 +230,28 @@ struct NemsisKitTests {
         #expect(node?.textContent == "eDisposition.21")
         #expect(node?.previousSibling?.textContent == "4221043")
 
-        var values = try pcr.nemsisValues(at: "/PatientCareReport/eDisposition/eDisposition.21")
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eDisposition/eDisposition.21")
         #expect(values.count == 1)
         #expect(values[0].text == "4221043")
         #expect(values[0].displayText == "Alternate Care Site")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "2")
+        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.901")
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]")
+        correlationId = node?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
+                                     "/eCustomResults.02[text()=\"eVitals.901\"]/..")
+        #expect(node != nil)
+        #expect(node?[element: "eCustomResults.01"]?.textContent == "2")
+        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.901")
+        #expect(values.count == 1)
+        #expect(values[0].text == "2")
+        #expect(values[0].displayText == "+2 Agitated")
 
         _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
         try pcr.setNemsisValues([
@@ -232,7 +259,7 @@ struct NemsisKitTests {
         ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
         node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
         #expect(node?.textContent == "3325011")
-        var correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
+        correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
         #expect(correlationId != nil)
 
         node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
@@ -257,22 +284,6 @@ struct NemsisKitTests {
         #expect(values[1].text == "c103")
         #expect(values[1].displayText == "Nose Flaring")
 
-        try pcr.setNemsisValues([
-            NemsisValue(value: "MX"),
-            NemsisValue(value: "IT")
-        ], at: "/PatientCareReport/eHistory/eHistory.904")
-        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                                     "eCustomResults.02[text()=\"eHistory.904\"]/..")
-        #expect(node != nil)
-        #expect(node?[elements: "eCustomResults.01"].count == 2)
-        #expect(node?[elements: "eCustomResults.01"][0].textContent == "MX")
-        #expect(node?[elements: "eCustomResults.01"][1].textContent == "IT")
-
-        values = try pcr.nemsisValues(at: "/PatientCareReport/eHistory/eHistory.904")
-        #expect(values.count == 2)
-        #expect(values[0].text == "MX")
-        #expect(values[1].text == "IT")
-
         node = try pcr.insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
         #expect(node != nil)
         correlationId = UUID().uuidString.lowercased()
@@ -284,7 +295,6 @@ struct NemsisKitTests {
         node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                                      "eCustomResults.02[text()=\"ceRestraint.01\"]/..")
         #expect(node?[attribute: "CorrelationID"] == correlationId)
-        print(try pcr.xmlString())
 
         try pcr.setNemsisValues([
             NemsisValue(value: "Stretcher restraint")
@@ -299,16 +309,35 @@ struct NemsisKitTests {
         node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                                      "eCustomResults.02[text()=\"ceRestraint.03\"]/..")
         #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
-//
-//        try pcr.setNemsisValues([
-//            NemsisValue(value: "2018-01-30T13:20:00-05:00")
-//        ], at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
-//
-//        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
-//        #expect(values.count == 2)
-//
-//        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.01")
-//        #expect(values.count == 1)
+
+        node = try pcr.insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+        #expect(node != nil)
+        correlationId = UUID().uuidString.lowercased()
+        node?[attribute: "CorrelationID"] = correlationId
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "2018-01-30T13:20:00-05:00")
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.01")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "Straight jacket")
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.02")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "Pt became combative")
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.03")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "2019-01-30T13:20:00-05:00")
+        ], at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.01")
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup/ceRestraint.01")
+        #expect(values.count == 2)
+        #expect(values[1].attributes?["CorrelationID"] == correlationId)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/ceRestraintGroup[@CorrelationID=\"\(correlationId ?? "")\"]/ceRestraint.01")
+        #expect(values.count == 1)
+        #expect(values[0].attributes?["CorrelationID"] == correlationId)
 
         print(try pcr.xmlString())
     }

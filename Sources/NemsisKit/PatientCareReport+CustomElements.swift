@@ -47,6 +47,51 @@ extension PatientCareReport {
         return correlationId
     }
 
+    func nemsisValuesForCustomResults(at xpath: String) throws -> [NemsisValue] {
+        guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
+        let name = String(last)
+
+        var values: [NemsisValue] = []
+        let customElementNode = version.agencyEmsCustomElement(named: name)
+        if customElementNode != nil {
+            let (_, enumeration, _) = try version.emsElementTypeInfo(named: name)
+            var nodesXpath: String!
+            let correlationId = xpath.extractCorrelationId()
+            if let correlationId {
+                nodesXpath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup[@CorrelationID=\"\(correlationId)\"]/" +
+                    "eCustomResults.02[text()=\"\(name)\"]/.. | " +
+                    "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/eCustomResults.03[text()=\"\(correlationId)\"]" +
+                    "/preceding-sibling::eCustomResults.02[text()=\"\(name)\"]/.."
+            } else {
+                nodesXpath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                    "eCustomResults.02[text()=\"\(name)\"]/.."
+            }
+            let nodes = try nodes(at: nodesXpath)
+            for node in nodes {
+                for subnode in node[elements: "eCustomResults.01"] {
+                    let value = NemsisValue(value: subnode.textContent)
+                    if let correlationId = node[attribute: "CorrelationID"] ?? node[element: "eCustomResults.03"]?.textContent {
+                        if value.attributes == nil {
+                            value.attributes = [:]
+                        }
+                        value.attributes?["CorrelationID"] = correlationId
+                    }
+                    for attr in subnode.attributes {
+                        if value.attributes == nil {
+                            value.attributes = [:]
+                        }
+                        value.attributes?[attr.name] = attr.value
+                    }
+                    if let enumeration, let enumValue = enumeration.first(where: { $0.value == subnode.textContent }) {
+                        value.displayText = enumValue.label
+                    }
+                    values.append(value)
+                }
+            }
+        }
+        return values
+    }
+
     func insertCustomResultValue(_ value: String, for node: Node?, at xpath: String) throws -> Node {
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)

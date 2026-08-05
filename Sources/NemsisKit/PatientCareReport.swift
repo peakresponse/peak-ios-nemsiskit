@@ -255,75 +255,60 @@ public class PatientCareReport: NemsisXml {
     override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)
-        let customElementNode = version.agencyEmsCustomElement(named: name)
-        if let customElementNode,
-           customElementNode[attribute: "CustomElementID"] !=
-               customElementNode[element: "seCustomConfiguration.01"]?[attribute: "nemsisElement"] {
-            var nodesXpath: String!
-            if let correlationId = xpath.extractCorrelationId() {
-                nodesXpath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup[@CorrelationID=\"\(correlationId)\"]/" +
-                    "eCustomResults.02[text()=\"\(name)\"]/.. | " +
-                    "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/eCustomResults.03[text()=\"\(correlationId)\"]/preceding-sibling::" +
-                    "eCustomResults.02[text()=\"\(name)\"]/.."
-            } else {
-                nodesXpath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                    "eCustomResults.02[text()=\"\(name)\"]/.."
-            }
-            let nodes = try nodes(at: nodesXpath)
+
+        switch version.emsElementType(named: name) {
+        case .standard, .extended:
+            let nodes = try nodes(at: xpath)
             var values: [NemsisValue] = []
-            for node in nodes {
-                for subnode in node[elements: "eCustomResults.01"] {
-                    values.append(NemsisValue(value: subnode.textContent))
+            if nodes.count > 0 {
+                let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
+                var customElementDescriptions: [String: String]?
+                var customResultNodes: [Node]?
+                if let customElementNode = version.agencyEmsCustomElement(named: name) {
+                    customResultNodes = try self.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
+                                                       "eCustomResults.02[text()=\"\(name)\"]")
+                    customResultNodes = customResultNodes?.map { $0.parentElement! }
+
+                    let results = customElementNode[elements: "seCustomConfiguration.06"]
+                    customElementDescriptions = [:]
+                    for resultNode in results {
+                        guard let description = resultNode[attribute: "customValueDescription"] else { continue }
+                        customElementDescriptions?[resultNode.textContent] = description
+                    }
+                }
+                for node in nodes {
+                    let value = NemsisValue(node: node)
+                    if value.isNil, let negative = negatives?.first(where: { $0.1 == value.negativeValue }) {
+                        value.displayText = negative.0
+                    } else if let text = value.text, !text.isEmpty {
+                        if let enumeration {
+                            value.displayText = enumeration.first(where: { $0.1 == text })?.0
+                            if let customResultNodes {
+                                if let correlationId = try getCorrelationId(for: node, at: xpath),
+                                   let customResultNode = customResultNodes
+                                    .first(where: { $0[element: "eCustomResults.03"]?.textContent == correlationId }) {
+                                    value.text = customResultNode[element: "eCustomResults.01"]?.textContent
+                                    value.displayText = customElementDescriptions?[value.text ?? ""]
+                                } else if customResultNodes.count == 1, let customResultNode = customResultNodes.first {
+                                    value.text = customResultNode[element: "eCustomResults.01"]?.textContent
+                                    value.displayText = customElementDescriptions?[value.text ?? ""]
+                                } else {
+                                    throw NemsisError.unexpected
+                                }
+                            }
+                        } else if baseType == "xs:dateTime", let date = try? Date(text, strategy: .iso8601) {
+                            value.displayText = date.formatted(date: .abbreviated, time: .shortened)
+                        }
+                    }
+                    values.append(value)
                 }
             }
             return values
+        case .custom, .customGrouped:
+            return try nemsisValuesForCustomResults(at: xpath)
+        default:
+            throw NemsisError.unexpected
         }
-        let nodes = try nodes(at: xpath)
-        var values: [NemsisValue] = []
-        if nodes.count > 0 {
-            let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
-            var customElementDescriptions: [String: String]?
-            var customResultNodes: [Node]?
-            if let customElementNode {
-                customResultNodes = try self.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
-                                                   "eCustomResults.02[text()=\"\(name)\"]")
-                customResultNodes = customResultNodes?.map { $0.parentElement! }
-
-                let results = customElementNode[elements: "seCustomConfiguration.06"]
-                customElementDescriptions = [:]
-                for resultNode in results {
-                    guard let description = resultNode[attribute: "customValueDescription"] else { continue }
-                    customElementDescriptions?[resultNode.textContent] = description
-                }
-            }
-            for node in nodes {
-                let value = NemsisValue(node: node)
-                if value.isNil, let negative = negatives?.first(where: { $0.1 == value.negativeValue }) {
-                    value.displayText = negative.0
-                } else if let text = value.text, !text.isEmpty {
-                    if let enumeration {
-                        value.displayText = enumeration.first(where: { $0.1 == text })?.0
-                        if let customResultNodes {
-                            if let correlationId = try getCorrelationId(for: node, at: xpath),
-                               let customResultNode = customResultNodes
-                                .first(where: { $0[element: "eCustomResults.03"]?.textContent == correlationId }) {
-                                value.text = customResultNode[element: "eCustomResults.01"]?.textContent
-                                value.displayText = customElementDescriptions?[value.text ?? ""]
-                            } else if customResultNodes.count == 1, let customResultNode = customResultNodes.first {
-                                value.text = customResultNode[element: "eCustomResults.01"]?.textContent
-                                value.displayText = customElementDescriptions?[value.text ?? ""]
-                            } else {
-                                throw NemsisError.unexpected
-                            }
-                        }
-                    } else if baseType == "xs:dateTime", let date = try? Date(text, strategy: .iso8601) {
-                        value.displayText = date.formatted(date: .abbreviated, time: .shortened)
-                    }
-                }
-                values.append(value)
-            }
-        }
-        return values
     }
 
     // swiftlint:disable:next cyclomatic_complexity
