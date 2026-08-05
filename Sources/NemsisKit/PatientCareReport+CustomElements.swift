@@ -149,7 +149,7 @@ extension PatientCareReport {
         case .extended:
             // check for correlation ids on the elements themselves
             var correlationIds = (try nodes(at: xpath)).compactMap { $0[attribute: "CorrelationID"] }
-            if correlationIds.isEmpty, let correlationId = try getCorrelationId(for: nil, at: xpath) {
+            if correlationIds.isEmpty, let correlationId = try getCorrelationId(for: nil, at: xpath, createIfMissing: true) {
                 // check for a correlation id on an ancestor
                 correlationIds.append(correlationId)
             }

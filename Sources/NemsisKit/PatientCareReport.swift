@@ -235,8 +235,9 @@ public class PatientCareReport: NemsisXml {
                 var node: Node?
                 if let nextIndex, nextIndex < (nodes?.count ?? 0) {
                     node = nodes?[nextIndex]
+                } else {
+                    node = nodes?.last
                 }
-                node = nodes?.last
                 nextTarget = String(target.removeFirst())
                 (nextTarget, nextIndex) = nextTarget.extractTargetAndZeroIndex()
                 return node

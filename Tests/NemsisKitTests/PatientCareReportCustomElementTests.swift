@@ -57,11 +57,11 @@ struct PatientCareReportCustomElementTests {
         nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                               "eCustomResults.02[text()=\"eHistory.904\"]/..")
         try #require(nodes.count == 1)
-        #expect(nodes[0][elements: "eCustomResults.01"].count == 1)
+        try #require(nodes[0][elements: "eCustomResults.01"].count == 1)
         #expect(nodes[0][elements: "eCustomResults.01"][0].textContent == "")
         #expect(nodes[0][elements: "eCustomResults.01"][0][attribute: "xsi:nil"] == "true")
         #expect(nodes[0][elements: "eCustomResults.01"][0][attribute: "PN"] == NemsisNegative.refused.rawValue)
-        #expect(nodes[0][elements: "eCustomResults.03"].count == 0)
+        try #require(nodes[0][elements: "eCustomResults.03"].count == 0)
 
         values = try pcr.nemsisValues(at: "/PatientCareReport/eHistory/eHistory.904")
         #expect(values.count == 1)
@@ -82,10 +82,10 @@ struct PatientCareReportCustomElementTests {
         nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                               "eCustomResults.02[text()=\"eDisposition.21\"]/..")
         try #require(nodes.count == 1)
-        #expect(nodes[0][elements: "eCustomResults.01"].count == 1)
+        try #require(nodes[0][elements: "eCustomResults.01"].count == 1)
         #expect(nodes[0][elements: "eCustomResults.01"][0].textContent == "4221043")
         #expect(nodes[0][elements: "eCustomResults.01"][0].attributes.isEmpty)
-        #expect(nodes[0][elements: "eCustomResults.03"].count == 0)
+        try #require(nodes[0][elements: "eCustomResults.03"].count == 0)
 
         values = try pcr.nemsisValues(at: "/PatientCareReport/eDisposition/eDisposition.21")
         try #require(values.count == 1)
@@ -108,10 +108,10 @@ struct PatientCareReportCustomElementTests {
         nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
                               "/eCustomResults.02[text()=\"eVitals.901\"]/..")
         try #require(nodes.count == 1)
-        #expect(nodes[0][elements: "eCustomResults.01"].count == 1)
+        try #require(nodes[0][elements: "eCustomResults.01"].count == 1)
         #expect(nodes[0][elements: "eCustomResults.01"][0].textContent == "2")
         #expect(nodes[0][elements: "eCustomResults.01"][0].attributes.isEmpty)
-        #expect(nodes[0][elements: "eCustomResults.03"].count == 1)
+        try #require(nodes[0][elements: "eCustomResults.03"].count == 1)
         #expect(nodes[0][elements: "eCustomResults.03"][0].textContent == correlationId)
 
         values = try pcr.nemsisValues(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.901")
@@ -125,7 +125,6 @@ struct PatientCareReportCustomElementTests {
         try pcr.setNemsisValues([
             NemsisValue(value: "0")
         ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.901")
-        print(try pcr.xmlString())
 
         nodes = try pcr.nodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]")
         try #require(nodes.count == 1)
@@ -135,31 +134,101 @@ struct PatientCareReportCustomElementTests {
         nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
                               "/eCustomResults.02[text()=\"eVitals.901\"]/..")
         try #require(nodes.count == 2)
-        #expect(nodes[1][elements: "eCustomResults.01"].count == 1)
+        try #require(nodes[1][elements: "eCustomResults.01"].count == 1)
         #expect(nodes[1][elements: "eCustomResults.01"][0].textContent == "0")
         #expect(nodes[1][elements: "eCustomResults.01"][0].attributes.isEmpty)
-        #expect(nodes[1][elements: "eCustomResults.03"].count == 1)
+        try #require(nodes[1][elements: "eCustomResults.03"].count == 1)
         #expect(nodes[1][elements: "eCustomResults.03"][0].textContent == correlationId)
+
+        try pcr.setNemsisValues([], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.901")
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
+                              "/eCustomResults.02[text()=\"eVitals.901\"]/..")
+        try #require(nodes.count == 1)
+        try #require(nodes[0][elements: "eCustomResults.01"].count == 1)
+        #expect(nodes[0][elements: "eCustomResults.01"][0].textContent == "0")
+        #expect(nodes[0][elements: "eCustomResults.01"][0].attributes.isEmpty)
+        try #require(nodes[0][elements: "eCustomResults.03"].count == 1)
+        #expect(nodes[0][elements: "eCustomResults.03"][0].textContent == correlationId)
+    }
+
+    @Test
+    mutating func testExtendedElementOnGroup() throws {
+        try pcr.setNemsisValues([
+            NemsisValue(value: "3325019")
+        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.TemperatureGroup/eVitals.25")
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.TemperatureGroup/eVitals.25")
+        try #require(nodes.count == 1)
+        #expect(nodes[0].textContent == "3325011")
+        #expect(nodes[0].attributes.isEmpty)
+
+        correlationId = nodes[0].parentElement?.parentElement?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
+                              "/eCustomResults.02[text()=\"eVitals.25\"]/..")
+        try #require(nodes.count == 1)
+        try #require(nodes[0][elements: "eCustomResults.01"].count == 1)
+        #expect(nodes[0][elements: "eCustomResults.01"][0].textContent == "3325019")
+        try #require(nodes[0][elements: "eCustomResults.03"].count == 1)
+        #expect(nodes[0][elements: "eCustomResults.03"][0].textContent == correlationId)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.TemperatureGroup/eVitals.25")
+        try #require(values.count == 1)
+        #expect(values[0].text == "3325019")
+        #expect(values[0].displayText == "No Touch (e.g., Infrared)")
+        #expect(values[0].attributes?.isEmpty ?? true)
+
+        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "3325019")
+        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        try #require(nodes.count == 1)
+        #expect(nodes[0].textContent == "3325011")
+        #expect(nodes[0].attributes.isEmpty)
+
+        correlationId = nodes[0].parentElement?.parentElement?[attribute: "CorrelationID"]
+        #expect(correlationId != nil)
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
+                              "/eCustomResults.02[text()=\"eVitals.25\"]/..")
+        try #require(nodes.count == 2)
+        try #require(nodes[1][elements: "eCustomResults.01"].count == 1)
+        #expect(nodes[1][elements: "eCustomResults.01"][0].textContent == "3325019")
+        try #require(nodes[1][elements: "eCustomResults.03"].count == 1)
+        #expect(nodes[1][elements: "eCustomResults.03"][0].textContent == correlationId)
+
+        values = try pcr.nemsisValues(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        try #require(values.count == 1)
+        #expect(values[0].text == "3325019")
+        #expect(values[0].displayText == "No Touch (e.g., Infrared)")
+        #expect(values[0].attributes?.isEmpty ?? true)
+
+        try pcr.setNemsisValues([
+            NemsisValue(value: "3325007")
+        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.TemperatureGroup/eVitals.25")
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
+        try #require(nodes.count == 1)
+        #expect(nodes[0].textContent == "3325011")
+        #expect(nodes[0].attributes.isEmpty)
+
+        nodes = try pcr.nodes(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
+                              "/eCustomResults.02[text()=\"eVitals.25\"]/..")
+        try #require(nodes.count == 1)
+        try #require(nodes[0][elements: "eCustomResults.01"].count == 1)
+        #expect(nodes[0][elements: "eCustomResults.01"][0].textContent == "3325019")
+        try #require(nodes[0][elements: "eCustomResults.03"].count == 1)
+        #expect(nodes[0][elements: "eCustomResults.03"][0].textContent == correlationId)
     }
 
     @Test
     mutating func testNemsisCustomElements() throws {
         var node: Node?
-
-        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
-        try pcr.setNemsisValues([
-            NemsisValue(value: "3325019")
-        ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
-        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.TemperatureGroup/eVitals.25")
-        #expect(node?.textContent == "3325011")
-        correlationId = node?.parentElement?.parentElement?[attribute: "CorrelationID"]
-        #expect(correlationId != nil)
-
-        node = try pcr.firstNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup" +
-                                     "/eCustomResults.02[text()=\"eVitals.25\"]/..")
-        #expect(node != nil)
-        #expect(node?[element: "eCustomResults.01"]?.textContent == "3325019")
-        #expect(node?[element: "eCustomResults.03"]?.textContent == correlationId)
 
         try pcr.setNemsisValues([
             NemsisValue(value: "c101"),
