@@ -9,6 +9,10 @@ import Foundation
 import Nodal
 
 extension PatientCareReport {
+    public func appXmlString() throws -> String? {
+        return try appDoc?.xmlString(options: [.indent, .noDeclaration])
+    }
+
     func appNodes(at xpath: String) throws -> [Node] {
         var nodes: [Node] = []
         if let appDoc {
@@ -133,9 +137,9 @@ extension PatientCareReport {
         let elementType = version.emsElementType(named: name)
         var customElementType: NemsisCustomElementType = .agency
         var isGrouped = false
-        if case .custom(let type, let customIsGrouped) = elementType {
-            customElementType = type
-            isGrouped = customIsGrouped
+        if case .custom(let cCustomElementType, let cIsGrouped) = elementType {
+            customElementType = cCustomElementType
+            isGrouped = cIsGrouped
         }
         let customGroupingElement = version.customGroupingElement(for: name)
 
