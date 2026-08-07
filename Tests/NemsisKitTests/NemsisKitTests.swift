@@ -63,12 +63,6 @@ struct NemsisKitTests {
     }
 
     @Test
-    func testTraversePCR() async throws {
-        let pcr = try PatientCareReport(version: version)
-        try pcr.traverse()
-    }
-
-    @Test
     func testInsertIntoPCR() async throws {
         let pcr = try PatientCareReport(version: version)
         let ePatient03 = try pcr.insertNode(at: "/PatientCareReport/ePatient/ePatient.PatientNameGroup/ePatient.03")

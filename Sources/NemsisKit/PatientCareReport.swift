@@ -30,6 +30,7 @@ func isNillableNotRecorded(schemaNode: Node) throws -> Bool {
 @MainActor // swiftlint:disable:next type_body_length
 public class PatientCareReport: NemsisXml {
     public private(set) var id: UUID!
+    var appDoc: Document?
 
     override public init(version: Nemsis) throws {
         id = UUID()
@@ -50,7 +51,8 @@ public class PatientCareReport: NemsisXml {
         id = clone.id
     }
 
-    func traverse(schema: [XPathNode]? = nil,
+    func traverse(doc: Document,
+                  schema: [XPathNode]? = nil,
                   with node: Node? = nil,
                   before: ((Node?, String, Node) throws -> Node?)? = nil,
                   after: ((Node?, String, Node) throws -> Bool)? = nil) throws {
@@ -82,7 +84,7 @@ public class PatientCareReport: NemsisXml {
                     results = query.nodesResult(with: schemaNode)
                 }
                 if let results, results.count > 0 {
-                    try traverse(schema: results, with: child, before: before, after: after)
+                    try traverse(doc: doc, schema: results, with: child, before: before, after: after)
                 }
                 if try after?(node, name, schemaNode) ?? false {
                     return
@@ -95,7 +97,7 @@ public class PatientCareReport: NemsisXml {
         try super.reset()
         let root = doc.makeDocumentElement(name: "PatientCareReport")
         root[attribute: "UUID"] = id.uuidString.lowercased()
-        try traverse(before: { (parentNode, name, schemaNode) in
+        try traverse(doc: doc, before: { (parentNode, name, schemaNode) in
             if let minOccurs = schemaNode[attribute: "minOccurs"], minOccurs == "0" {
                 return nil
             }
@@ -110,8 +112,12 @@ public class PatientCareReport: NemsisXml {
         })
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     override public func insertNode(at xpath: String) throws -> Node? {
+        return try insertNode(at: xpath, in: doc)
+    }
+
+    // swiftlint:disable:next cyclomatic_complexity
+    func insertNode(at xpath: String, in doc: Document) throws -> Node? {
         var target = xpath.split(separator: "/")
         var nextTarget = String(target.removeFirst())
         var nextIndex: Int?
@@ -124,7 +130,7 @@ public class PatientCareReport: NemsisXml {
         var stopNode: Node?
         var node: Node?
         var prevNode: Node?
-        try traverse(before: { (parentNode, name, schemaNode) in
+        try traverse(doc: doc, before: { (parentNode, name, schemaNode) in
             if stopNode != nil {
                 if isDone {
                     return nil
@@ -204,7 +210,7 @@ public class PatientCareReport: NemsisXml {
         nextTarget = String(target.removeFirst())
         (nextTarget, nextIndex) = nextTarget.extractTargetAndZeroIndex()
         var isFound = false
-        try traverse(before: { (parentNode, name, schemaNode) in
+        try traverse(doc: doc, before: { (parentNode, name, schemaNode) in
             if isFound {
                 return nil
             }
@@ -306,7 +312,7 @@ public class PatientCareReport: NemsisXml {
                 }
             }
             return values
-        case .custom, .customGrouped:
+        case .custom:
             return try nemsisValuesForCustomResults(at: xpath)
         default:
             throw NemsisError.unexpected
@@ -362,7 +368,7 @@ public class PatientCareReport: NemsisXml {
                     node = nil
                 }
             }
-        case .custom, .customGrouped:
+        case .custom:
             for value in values {
                 let text = value.text ?? ""
                 let node = try insertCustomResultValue(text, for: nil, at: xpath)

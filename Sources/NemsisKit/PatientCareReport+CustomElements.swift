@@ -9,6 +9,39 @@ import Foundation
 import Nodal
 
 extension PatientCareReport {
+    func appNodes(at xpath: String) throws -> [Node] {
+        var nodes: [Node] = []
+        if let appDoc {
+            let query = try XPathQuery(xpath)
+            let results = query.nodesResult(with: appDoc.node)
+            for result in results {
+                if let node = result.node {
+                    nodes.append(node)
+                }
+            }
+        }
+        return nodes
+    }
+
+    func firstAppNode(at xpath: String) throws -> Node? {
+        var node: Node?
+        if let appDoc {
+            let query = try XPathQuery(xpath)
+            node = query.firstNodeResult(with: appDoc.node)?.node
+        }
+        return node
+    }
+
+    func insertAppNode(at xpath: String) throws -> Node? {
+        if appDoc == nil {
+            appDoc = Document()
+            let root = appDoc?.makeDocumentElement(name: "PatientCareReport")
+            root?[attribute: "UUID"] = id.uuidString.lowercased()
+        }
+        guard let appDoc else { throw NemsisError.unexpected }
+        return try insertNode(at: xpath, in: appDoc)
+    }
+
     func getCorrelationId(for node: Node?, at xpath: String, createIfMissing: Bool = false) throws -> String? {
         var correlationId: String?
         // first check if we're attaching to an existing repeating element
@@ -52,7 +85,10 @@ extension PatientCareReport {
         let name = String(last)
 
         var values: [NemsisValue] = []
-        let elementType = version.emsElementType(named: name)
+        guard let elementType = version.emsElementType(named: name),
+              case let .custom(customElementType, isGrouped) = elementType else {
+            throw NemsisError.unexpected
+        }
         let (_, enumeration, _) = try version.emsElementTypeInfo(named: name)
         var nodesXpath: String!
         let correlationId = xpath.extractCorrelationId()
@@ -65,11 +101,11 @@ extension PatientCareReport {
             nodesXpath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup/" +
                 "eCustomResults.02[text()=\"\(name)\"]/.."
         }
-        let nodes = try nodes(at: nodesXpath)
+        let nodes = customElementType == .agency ? try nodes(at: nodesXpath) : try appNodes(at: nodesXpath)
         for node in nodes {
             for subnode in node[elements: "eCustomResults.01"] {
                 let value = NemsisValue(value: subnode.textContent)
-                if elementType == .customGrouped,
+                if isGrouped,
                    let correlationId = node[attribute: "CorrelationID"] ?? node[element: "eCustomResults.03"]?.textContent {
                     if value.attributes == nil {
                         value.attributes = [:]
@@ -95,11 +131,17 @@ extension PatientCareReport {
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)
         let elementType = version.emsElementType(named: name)
+        var customElementType: NemsisCustomElementType = .agency
+        var isGrouped = false
+        if case .custom(let type, let customIsGrouped) = elementType {
+            customElementType = type
+            isGrouped = customIsGrouped
+        }
         let customGroupingElement = version.customGroupingElement(for: name)
 
         var resultsPath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup"
         var correlationId: String?
-        if elementType == .customGrouped,
+        if isGrouped,
            name == customGroupingElement?[attribute: "CustomElementID"] {
             correlationId = xpath.extractCorrelationId()
             if let correlationId {
@@ -108,7 +150,7 @@ extension PatientCareReport {
             }
         } else {
             resultsPath += "/eCustomResults.02[text()=\"\(name)\"]"
-            if elementType == .customGrouped {
+            if isGrouped {
                 correlationId = xpath.extractCorrelationId()
             } else {
                 correlationId = try getCorrelationId(for: node, at: xpath, createIfMissing: true)
@@ -118,11 +160,13 @@ extension PatientCareReport {
             }
         }
         resultsPath += "/.."
-        var node = try firstNode(at: resultsPath)
+        var node = customElementType == .agency ? try firstNode(at: resultsPath) : try firstAppNode(at: resultsPath)
         if node == nil {
-            node = try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+            node = customElementType == .agency
+                ? try insertNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
+                : try insertAppNode(at: "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup")
             node?[element: "eCustomResults.02"]?.textContent = name
-            if elementType == .customGrouped,
+            if isGrouped,
                name == customGroupingElement?[attribute: "CustomElementID"],
                let correlationId {
                 node?[attribute: "CorrelationID"] = correlationId
@@ -170,31 +214,33 @@ extension PatientCareReport {
             for result in results {
                 result.parentElement?.removeChild(result)
             }
-        case .custom:
-            let correlationId = try getCorrelationId(for: nil, at: xpath, createIfMissing: true)
-            var resultsPath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup"
-            resultsPath += "/eCustomResults.02[text()=\"\(name)\"]"
-            if let correlationId {
-                resultsPath += "/following-sibling::eCustomResults.03[text()=\"\(correlationId)\"]"
-            }
-            resultsPath += "/.."
-            let results = try nodes(at: resultsPath)
-            for result in results {
-                result.parentElement?.removeChild(result)
-            }
-        case .customGrouped:
-            guard let customGroupingElement = version.customGroupingElement(for: name) else { throw NemsisError.unexpected }
-            if let correlationId = xpath.extractCorrelationId() {
-                var resultsPath = "/PatientCareReport/eCustomResults"
-                if name == customGroupingElement[attribute: "CustomElementID"] {
-                    resultsPath += "/eCustomResults.ResultsGroup[@CorrelationID=\"\(correlationId)\"]"
-                } else {
-                    resultsPath += "/eCustomResults.ResultsGroup/eCustomResults.03[text()=\"\(correlationId)\"]"
-                    resultsPath += "/preceding-sibling::eCustomResults.02[text()=\"\(name)\"]/.."
+        case .custom(let customElementType, let isGrouped):
+            if !isGrouped {
+                let correlationId = try getCorrelationId(for: nil, at: xpath, createIfMissing: true)
+                var resultsPath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup"
+                resultsPath += "/eCustomResults.02[text()=\"\(name)\"]"
+                if let correlationId {
+                    resultsPath += "/following-sibling::eCustomResults.03[text()=\"\(correlationId)\"]"
                 }
-                let results = try nodes(at: resultsPath)
+                resultsPath += "/.."
+                let results = customElementType == .agency ? try nodes(at: resultsPath) : try appNodes(at: resultsPath)
                 for result in results {
                     result.parentElement?.removeChild(result)
+                }
+            } else {
+                guard let customGroupingElement = version.customGroupingElement(for: name) else { throw NemsisError.unexpected }
+                if let correlationId = xpath.extractCorrelationId() {
+                    var resultsPath = "/PatientCareReport/eCustomResults"
+                    if name == customGroupingElement[attribute: "CustomElementID"] {
+                        resultsPath += "/eCustomResults.ResultsGroup[@CorrelationID=\"\(correlationId)\"]"
+                    } else {
+                        resultsPath += "/eCustomResults.ResultsGroup/eCustomResults.03[text()=\"\(correlationId)\"]"
+                        resultsPath += "/preceding-sibling::eCustomResults.02[text()=\"\(name)\"]/.."
+                    }
+                    let results = customElementType == .agency ? try nodes(at: resultsPath) : try appNodes(at: resultsPath)
+                    for result in results {
+                        result.parentElement?.removeChild(result)
+                    }
                 }
             }
         default:

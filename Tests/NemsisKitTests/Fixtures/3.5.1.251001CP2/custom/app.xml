@@ -5,7 +5,7 @@
     <sState.01>00</sState.01>
   </sState>
   <seCustomConfiguration>
-    <seCustomConfiguration.CustomGroup CustomElementID="peVitals.24">
+    <seCustomConfiguration.CustomGroup CustomElementID="peakVitals.24">
       <seCustomConfiguration.01 nemsisElement="eVitals.TemperatureGroup">Temperature (Fahrenheit)</seCustomConfiguration.01>
       <seCustomConfiguration.02>The patient's body temperature in degrees Fahrenheit.</seCustomConfiguration.02>
       <seCustomConfiguration.03>9902005</seCustomConfiguration.03>

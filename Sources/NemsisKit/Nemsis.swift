@@ -36,8 +36,12 @@ func enumTuples(for typeNode: Node) throws -> [(label: String, value: String)]? 
     return nil
 }
 
+public enum NemsisCustomElementType {
+    case agency, app
+}
+
 public enum NemsisElementType {
-    case standard, extended, custom, customGrouped
+    case standard, extended, custom(type: NemsisCustomElementType, isGrouped: Bool)
 }
 
 @MainActor
@@ -175,6 +179,11 @@ public class Nemsis {
             for result in results {
                 guard let node = result.node, let name = node[attribute: "CustomElementID"] else { continue }
                 appCustomElements[emsDataSetFilename]?[name] = node
+                if let customGroupingId = node[element: "seCustomConfiguration.09"]?.textContent,
+                   let customGroupingElement = agencyCustomElements[emsDataSetFilename]?[customGroupingId] {
+                    customGroupingElements[name] = customGroupingElement
+                    customGroupingElements[customGroupingId] = customGroupingElement
+                }
             }
         }
         return doc
@@ -192,13 +201,20 @@ public class Nemsis {
 
     public func emsElementType(named: String) -> NemsisElementType? {
         if let customElement = agencyEmsCustomElement(named: named) {
-            if customElement[attribute: "CustomElementID"] == customElement[element: "seCustomConfiguration.01"]?[attribute: "nemsisElement"] {
+            if customElement[attribute: "CustomElementID"] ==
+                customElement[element: "seCustomConfiguration.01"]?[attribute: "nemsisElement"] {
                 return .extended
             }
             if customGroupingElement(for: named) != nil {
-                return .customGrouped
+                return .custom(type: .agency, isGrouped: true)
             }
-            return .custom
+            return .custom(type: .agency, isGrouped: false)
+        }
+        if appEmsCustomElement(named: named) != nil {
+            if customGroupingElement(for: named) != nil {
+                return .custom(type: .app, isGrouped: true)
+            }
+            return .custom(type: .app, isGrouped: false)
         }
         if emsElement(named: named) != nil {
             return .standard
@@ -344,7 +360,7 @@ public class Nemsis {
         if errors.isEmpty {
             return try await schematronValidator.validate(xml: wrappedXML, with: "EMSDataSet.sch.xsl.sef.json")
         } else {
-            errors = errors.map { XMLValidationError(message: $0.message, // swiftlint:disable:next line_length
+            errors = errors.map { XMLValidationError(message: $0.message,
                                                      location: $0.location.replacingOccurrences(of: "/EMSDataSet/Header", with: ""))}
         }
         return errors
