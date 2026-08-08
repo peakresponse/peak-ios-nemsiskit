@@ -95,7 +95,7 @@ extension PatientCareReport {
         }
         let (_, enumeration, _) = try version.emsElementTypeInfo(named: name)
         var nodesXpath: String!
-        let correlationId = xpath.extractCorrelationId()
+        let correlationId = try getCorrelationId(for: nil, at: xpath)
         if let correlationId {
             nodesXpath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup[@CorrelationID=\"\(correlationId)\"]/" +
                 "eCustomResults.02[text()=\"\(name)\"]/.. | " +
