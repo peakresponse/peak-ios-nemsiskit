@@ -268,7 +268,7 @@ public class PatientCareReport: NemsisXml {
             let nodes = try nodes(at: xpath)
             var values: [NemsisValue] = []
             if nodes.count > 0 {
-                let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: name)
+                let (baseType, enumeration, negatives, _) = try version.emsElementTypeInfo(named: name)
                 var customElementDescriptions: [String: String]?
                 var customResultNodes: [Node]?
                 if let customElementNode = version.agencyEmsCustomElement(named: name) {

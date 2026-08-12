@@ -237,7 +237,8 @@ public class Nemsis {
     // swiftlint:disable:next large_tuple function_body_length cyclomatic_complexity
     public func emsElementTypeInfo(named: String) throws -> (baseType: String?,
                                                              enumeration: [(label: String, value: String)]?,
-                                                             negatives: [(label: String, value: String)]?) {
+                                                             negatives: [(label: String, value: String)]?,
+                                                             isPNNil: Bool) {
         let elementNode = emsElement(named: named)
         if elementNode == nil {
             if let customElementNode = agencyEmsCustomElement(named: named) ?? appEmsCustomElement(named: named) {
@@ -297,7 +298,7 @@ public class Nemsis {
                     }
                 }
                 negatives?.sort(by: { $0.label < $1.label })
-                return (baseType, enumeration, negatives)
+                return (baseType, enumeration, negatives, false)
             }
             throw NemsisError.unexpected
         }
@@ -308,7 +309,7 @@ public class Nemsis {
         if typeName == nil, let typeExtNode {
             typeName = typeExtNode[attribute: "base"]
         }
-        guard let typeName, let typeNode = emsType(named: typeName) else { return (nil, nil, nil) }
+        guard let typeName, let typeNode = emsType(named: typeName) else { return (nil, nil, nil, false) }
         query = try XPathQuery("./xs:restriction")
         guard let restrictionNode = query.firstNodeResult(with: typeNode)?.node,
               let baseType = restrictionNode[attribute: "base"] else {
@@ -346,7 +347,13 @@ public class Nemsis {
             try addNegatives(name: "PN")
             try addNegatives(name: "NV")
         }
-        return (baseType, enumeration, negatives)
+
+        var isPNNil = false
+        query = try XPathQuery("./xs:annotation/xs:documentation/nemsisTacDoc/PNNil")
+        if let node = query.firstNodeResult(with: elementNode)?.node {
+            isPNNil = node.textContent == "Yes"
+        }
+        return (baseType, enumeration, negatives, isPNNil)
     }
 
     public func emsType(named: String) -> Node? {

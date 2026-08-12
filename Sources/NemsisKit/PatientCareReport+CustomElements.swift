@@ -93,7 +93,7 @@ extension PatientCareReport {
               case let .custom(customElementType, isGrouped) = elementType else {
             throw NemsisError.unexpected
         }
-        let (_, enumeration, _) = try version.emsElementTypeInfo(named: name)
+        let (_, enumeration, _, _) = try version.emsElementTypeInfo(named: name)
         var nodesXpath: String!
         let correlationId = try getCorrelationId(for: nil, at: xpath)
         if let correlationId {
