@@ -68,6 +68,10 @@ extension PatientCareReport {
                 }
             }
         }
+        // otherwise, check for an explicit correlation id in the path
+        if let correlationId = xpath.extractCorrelationId() {
+            return correlationId
+        }
         // otherwise, check for a repeating ancestor group in the xpath
         if let repeatingAncestorXpath = xpath.extractRepeatingAncestorXpath() {
             if let correlationIdNode = try firstNode(at: repeatingAncestorXpath) {
@@ -192,7 +196,8 @@ extension PatientCareReport {
     func removeCustomResults(for xpath: String, insertNV: Bool) throws {
         guard let last = xpath.split(separator: "/").last else { throw NemsisError.unexpected }
         let name = String(last)
-        switch version.emsElementType(named: name) {
+        let (target, index) = name.extractTargetAndZeroIndex()
+        switch version.emsElementType(named: target) {
         case .standard:
             return
         case .extended:
@@ -205,12 +210,12 @@ extension PatientCareReport {
             var results: [Node] = []
             if correlationIds.isEmpty {
                 var resultsPath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup"
-                resultsPath += "/eCustomResults.02[text()=\"\(name)\"]/.."
+                resultsPath += "/eCustomResults.02[text()=\"\(target)\"]/.."
                 results = try nodes(at: resultsPath)
             } else {
                 for correlationId in correlationIds {
                     var resultsPath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup"
-                    resultsPath += "/eCustomResults.02[text()=\"\(name)\"]"
+                    resultsPath += "/eCustomResults.02[text()=\"\(target)\"]"
                     resultsPath += "/following-sibling::eCustomResults.03[text()=\"\(correlationId)\"]/.."
                     results.append(contentsOf: try nodes(at: resultsPath))
                 }
@@ -222,7 +227,7 @@ extension PatientCareReport {
             if !isGrouped {
                 let correlationId = try getCorrelationId(for: nil, at: xpath, createIfMissing: true)
                 var resultsPath = "/PatientCareReport/eCustomResults/eCustomResults.ResultsGroup"
-                resultsPath += "/eCustomResults.02[text()=\"\(name)\"]"
+                resultsPath += "/eCustomResults.02[text()=\"\(target)\"]"
                 if let correlationId {
                     resultsPath += "/following-sibling::eCustomResults.03[text()=\"\(correlationId)\"]"
                 }

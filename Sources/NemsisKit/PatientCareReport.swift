@@ -210,6 +210,7 @@ public class PatientCareReport: NemsisXml {
         nextTarget = String(target.removeFirst())
         (nextTarget, nextIndex) = nextTarget.extractTargetAndZeroIndex()
         var isFound = false
+        var reinsert = false
         try traverse(doc: doc, before: { (parentNode, name, schemaNode) in
             if isFound {
                 return nil
@@ -218,23 +219,15 @@ public class PatientCareReport: NemsisXml {
             if name == nextTarget {
                 if target.isEmpty {
                     isFound = true
-                    if !insertNV || schemaNode[attribute: "minOccurs"] == "0" {
+                    if let nextIndex, nextIndex < (nodes?.count ?? 0), let node = nodes?[nextIndex] {
+                        parentNode?.removeChild(node)
+                    } else {
                         for node in nodes ?? [] {
                             parentNode?.removeChild(node)
                         }
-                    } else {
-                        if let nodes, nodes.count > 1 {
-                            for node in nodes[1...] {
-                                parentNode?.removeChild(node)
-                            }
-                        }
-                        if let node = nodes?.first {
-                            node.removeAllChildren()
-                            if try isNillableNotRecorded(schemaNode: schemaNode) {
-                                node[attribute: "xsi:nil"] = "true"
-                                node[attribute: "NV"] = "7701003"
-                            }
-                        }
+                    }
+                    if parentNode?[elements: name].isEmpty ?? false {
+                        reinsert = insertNV && schemaNode[attribute: "minOccurs"] != "0"
                     }
                     return nil
                 }
@@ -257,6 +250,9 @@ public class PatientCareReport: NemsisXml {
             }
             return true
         })
+        if reinsert {
+            _ = try insertNode(at: xpath.withoutTrailingIndex())
+        }
     }
 
     override public func nemsisValues(at xpath: String) throws -> [NemsisValue] {

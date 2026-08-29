@@ -113,7 +113,20 @@ struct NemsisKitTests {
         query = try XPathQuery("/PatientCareReport/ePatient/ePatient.PatientNameGroup")
         #expect(query.firstNodeResult(with: pcr.doc.node) == nil)
 
-        print(try pcr.xmlString())
+        _ = try pcr.insertNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup")
+        try pcr.setNemsisValues([NemsisValue(value: try Date("2026-06-19T15:06:00-07:00", strategy: .iso8601))],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        try pcr.setNemsisValues([NemsisValue(value: try Date("2026-06-20T15:06:00-07:00", strategy: .iso8601))],
+                                at: "/PatientCareReport/eVitals/eVitals.VitalGroup[2]/eVitals.01")
+
+        try pcr.removeNodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]")
+
+        var node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        #expect(node?.textContent == "2026-06-20T15:06:00-07:00")
+
+        try pcr.removeNodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]")
+        node = try pcr.firstNode(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.01")
+        #expect(node?.textContent == "")
     }
 
     @Test
@@ -124,7 +137,7 @@ struct NemsisKitTests {
         #expect(version.appCustomElements[emsDataSetFilename] != nil)
         #expect(version.appCustomElements[emsDataSetFilename]?.count == 1)
 
-        let (baseType, enumeration, negatives) = try version.emsElementTypeInfo(named: "eHistory.904")
+        let (baseType, enumeration, negatives, _) = try version.emsElementTypeInfo(named: "eHistory.904")
         #expect(baseType == "other")
         #expect(enumeration == nil)
         #expect(negatives?.count == 3)

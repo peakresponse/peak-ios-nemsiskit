@@ -54,4 +54,12 @@ extension String {
         }
         return nil
     }
+
+    func withoutTrailingIndex() -> String {
+        let matches = indexRegex.matches(in: self, range: NSRange(location: 0, length: self.count))
+        if let match = matches.last, match.range.location + match.range.length == self.count {
+            return String(self[Range(NSRange(location: 0, length: match.range.location), in: self)!])
+        }
+        return self
+    }
 }
