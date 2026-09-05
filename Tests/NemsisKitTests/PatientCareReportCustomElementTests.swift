@@ -74,6 +74,8 @@ struct PatientCareReportCustomElementTests {
             NemsisValue(value: "2")
         ], at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]/eVitals.901")
 
+        print(try pcr.xmlString())
+
         nodes = try pcr.nodes(at: "/PatientCareReport/eVitals/eVitals.VitalGroup[1]")
         try #require(nodes.count == 1)
         correlationId = nodes[0][attribute: "CorrelationID"]

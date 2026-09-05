@@ -46,6 +46,13 @@ public class PatientCareReport: NemsisXml {
         }
     }
 
+    public convenience init(version: Nemsis, url fileURL: URL, appURL: URL? = nil) throws {
+        try self.init(version: version, url: fileURL)
+        if let appURL {
+            appDoc = try Document(url: appURL)
+        }
+    }
+
     override public init(clone: PatientCareReport) throws {
         try super.init(clone: clone)
         id = clone.id
